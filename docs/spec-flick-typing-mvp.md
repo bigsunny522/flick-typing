@@ -19,6 +19,7 @@
 - `src/keyboard/layout.ts` — キー配列とフリック方向の対応表
 - `src/keyboard/gesture.ts` — 指の軌跡からキーと方向を決める純粋関数
 - `src/keyboard/view.ts` — キーボードの描画と Pointer Events の処理
+- `src/keyboard/guide.ts` — フリックのガイドのマスの位置を計算する純粋関数
 - `src/game/kana.ts` — 「゛゜小」の切り替え表、打てる文字の集合
 - `src/game/judge.ts` — 1打鍵ごとの判定(純粋関数)
 - `src/game/session.ts` — タイマー・コンボ・ボーナス・スコアを持つゲーム進行(純粋な reducer)
@@ -151,10 +152,35 @@ function readDirection(dx: number, dy: number, keyWidth: number): Direction;
 - キーボードの要素で `pointerdown` / `pointermove` / `pointerup` / `pointercancel` を受ける。`pointerType !== "touch"` のイベントは無視する
 - `pointerId` ごとに状態を持ち、複数の指を同時に追う(前の指を離す前に次のキーを押せる)
 - `pointerdown` で `setPointerCapture` する。指を置いた座標・時刻(`event.timeStamp`)・`width`・`height`・`pressure` を記録する
-- `pointermove` の回数を数える。指を置いている間は、そのキーの上下左右に 5 文字のガイドを出し、今の方向を強調する
+- `pointermove` の回数を数える。指を置いている間は、フリックのガイド(下記)を出す
 - **文字を確定するのは `pointerup`**。`pointercancel` は何も入力しない
 - 確定した打鍵は `KeyStroke`(後述)としてゲームに渡す。方向に文字がない場合と空キーは渡さない
 - Android では確定のたびに `navigator.vibrate?.(8)` を呼ぶ(対応していない環境では何もしない)
+
+#### フリックのガイド(`guide.ts` / `view.ts`)
+
+iPhone の日本語かなキーボードと同じ、十字型のガイドにする。
+
+```
+        [う]
+   [い] [あ] [え]
+        [お]
+```
+
+- 指を置いたキーを中心に、**キー1つと同じ大きさのマス**を5つ、十字に並べる。中心が tap、左・上・右・下がそれぞれの方向の文字
+- 位置は `position: absolute` でキーボード要素(`position: fixed`)を基準に置く。**グリッドの流れには入れない**(キーの並びを崩さない)。`pointer-events: none`、キーより手前(`z-index`)に出す
+- 上の行のキーの「上」マスは、キーボードの外(お題の側)にはみ出してよい
+- 方向に文字がない(`—`)マスは出さない。「゛゜小」キーは中心のマスだけ(ラベル「゛゜小」)
+- 今の方向のマスを強調する(アクセント色の背景に白文字)。それ以外のマスは白背景で、薄い影をつける
+- `pointermove` のたびに `readDirection(dx, dy, keyWidth)` で今の方向を求め、強調するマスを切り替える。指を置いた直後は `tap`(中心)が強調されている
+- `pointerup` / `pointercancel` でそのポインターのガイドを消す。複数の指を同時に使うときは、ポインターごとに別のガイドを出す
+- マスの位置の計算は純粋関数にして `src/keyboard/guide.ts` に置く:
+  ```ts
+  type Rect = { x: number; y: number; width: number; height: number };
+  function guideCells(key: Rect, values: string[]): { dir: Direction; label: string; rect: Rect }[];
+  ```
+  `key` はキーボード要素の左上を原点としたキーの矩形。`values` は `keyValues(id)` の結果(tap, left, up, right, down の順)。`—` の方向は返さない。左右のマスは `key.x ∓ key.width`、上下のマスは `key.y ∓ key.height`(列・行のすき間は含めなくてよい)
+- テスト(`tests/guide.test.ts`): 5方向の位置、`—` の方向が返らないこと、「や」キーで左右が出ないこと
 
 ### 4. 判定(`judge.ts`、純粋関数)
 
@@ -362,7 +388,7 @@ type PlayLog = {
 実装担当が確かめること:
 
 - [ ] `npx.cmd tsc --noEmit` がエラーなしで終わる
-- [ ] `npm.cmd test` がすべて通る。少なくとも次のテストファイルがある: `judge` / `gesture` / `session` / `prompts` / `env` / `behavior` / `replay` / `no-os-input`
+- [ ] `npm.cmd test` がすべて通る。少なくとも次のテストファイルがある: `judge` / `gesture` / `guide` / `session` / `prompts` / `env` / `behavior` / `replay` / `no-os-input`
 - [ ] `npm.cmd run build` が通り、`dist/` ができる
 - [ ] `tests/judge.test.ts` が仕様 4 の表の全行と、「ぱ」「っ」「づ」の例を含む
 - [ ] `tests/session.test.ts` が、20 コンボごとの +1 秒、パーフェクトの +1 秒、ミスでのコンボのリセット、終了時刻を過ぎた打鍵を無視することを含む
