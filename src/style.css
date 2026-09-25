@@ -1,5 +1,6 @@
 :root {
   --kb-height-ratio: 0.58;
+  --kb-bottom-offset: 40px;
 }
 
 * {
@@ -39,7 +40,7 @@ button {
 .keyboard {
   position: fixed;
   right: 4vw;
-  bottom: env(safe-area-inset-bottom);
+  bottom: calc(env(safe-area-inset-bottom) + var(--kb-bottom-offset));
   left: 4vw;
   display: grid;
   height: calc(100vw * var(--kb-height-ratio));
@@ -80,7 +81,7 @@ button {
 }
 
 .play {
-  padding-bottom: 60vw;
+  padding-bottom: calc(60vw + var(--kb-bottom-offset));
 }
 
 .done {
