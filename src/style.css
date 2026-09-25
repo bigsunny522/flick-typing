@@ -96,6 +96,11 @@ button {
   font-size: 2rem;
 }
 
+#bonus,
+#perfect {
+  min-height: 1.5em;
+}
+
 .gauge {
   width: 100%;
   height: 8px;
