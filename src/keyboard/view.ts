@@ -79,7 +79,9 @@ export function mountKeyboard(host: HTMLElement, onStroke: (stroke: KeyStroke) =
       const state = states.get(event.pointerId);
       if (!state) return;
       states.delete(event.pointerId);
-      host.querySelector(`[data-pointer-id="${event.pointerId}"]`)?.remove();
+      host
+        .querySelectorAll(`[data-pointer-id="${event.pointerId}"]`)
+        .forEach((guide) => guide.remove());
       const bounds = host.getBoundingClientRect();
       const up = {
         x: event.clientX - bounds.left,
@@ -100,7 +102,9 @@ export function mountKeyboard(host: HTMLElement, onStroke: (stroke: KeyStroke) =
     });
     button.addEventListener("pointercancel", (event) => {
       states.delete(event.pointerId);
-      host.querySelector(`[data-pointer-id="${event.pointerId}"]`)?.remove();
+      host
+        .querySelectorAll(`[data-pointer-id="${event.pointerId}"]`)
+        .forEach((guide) => guide.remove());
     });
     host.append(button);
   }
