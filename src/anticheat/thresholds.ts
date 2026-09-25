@@ -1,0 +1,9 @@
+export const MIN_STROKES = 10;
+export const WINDOW = 20;
+export const INSTANT_MS = 8;
+export const INSTANT_RATIO = 0.8;
+export const TELEPORT_MIN = 5;
+export const TELEPORT_RATIO = 0.8;
+export const SAME_POINT = 8;
+export const FAST_MEDIAN = 40;
+export const REGULAR_CV = 0.05;
