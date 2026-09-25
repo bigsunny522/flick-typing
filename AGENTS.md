@@ -41,6 +41,7 @@ tests/           Vitest
 npx.cmd tsc --noEmit
 npm.cmd test
 npm.cmd run build
+npm.cmd run format:check
 ```
 
 ## 守ること
@@ -48,7 +49,7 @@ npm.cmd run build
 - コミット・push・デプロイはしない(レビュー後に Claude Code が行う)
 - ファイルは UTF-8 のまま保つ。ソース編集は `apply_patch` を優先し、PowerShell のテキスト入出力で書き戻さない
 - 依存の追加が要るときは、実装を止めて聞く
-- コードは人が読む前提で書く。インデントは2スペース、1行に1文、1行はおおむね100文字以内。複数の文を1行に詰めたり、圧縮したような書き方をしたりしない
+- 整形は `npm.cmd run format`(Prettier)でそろえる。コードは人が読む前提で書く。インデントは2スペース、1行に1文、1行はおおむね100文字以内。複数の文を1行に詰めたり、圧縮したような書き方をしたりしない
 - テストは1つの `it` で1つの振る舞いを確かめる。仕様書に表があるときは、表の1行ごとにテストを書く
 - `src/game/` と `src/anticheat/` では DOM・`Date.now()`・`Math.random()` を使わない(サーバー側で同じコードを使って入力ログを再計算するため)。例外はブラウザから値を集める `src/anticheat/env.ts` の `collectEnv` だけ
 - 入力は自前のフリックキーボード UI からだけ受け付ける。OS の IME・`<input>`/`<textarea>`・`keydown` を入力経路にしない
