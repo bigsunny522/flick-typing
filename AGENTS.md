@@ -7,12 +7,18 @@
 ## プロジェクト
 
 - 絶対パス: `G:\myApp\flick_typing`
-- スタック: 未定(最初の仕様書で決めたら埋める)
+- スタック: Vite + TypeScript(フレームワークなし)、テストは Vitest。配信は Cloudflare Pages を予定
 
 ## 構成
 
 ```
-docs/   仕様書(docs/spec-<機能名>.md)
+docs/            仕様書(docs/spec-<機能名>.md)
+src/screens/     画面(タイトル・プレイ・結果・ブロック)
+src/keyboard/    フリックキーボードの配列・読み取り・描画
+src/game/        判定・ゲーム進行・お題(DOM に触れない純粋な関数)
+src/anticheat/   環境チェック・挙動分析・入力ログ(DOM に触れない純粋な関数)
+src/data/        お題の JSON
+tests/           Vitest
 ```
 
 ## 役割分担
@@ -29,11 +35,18 @@ docs/   仕様書(docs/spec-<機能名>.md)
 
 ## 確認コマンド
 
-未定(最初の仕様書でスタックを決めたら埋める)。Windows の PowerShell では `npm.cmd` / `npx.cmd` を使う。
+実装を終えたら、次をすべて実行して通すこと(2026-09-25 にツールが動くことを確認済み)。Windows の PowerShell では `npm.cmd` / `npx.cmd` を使う。
+
+```
+npx.cmd tsc --noEmit
+npm.cmd test
+npm.cmd run build
+```
 
 ## 守ること
 
 - コミット・push・デプロイはしない(レビュー後に Claude Code が行う)
 - ファイルは UTF-8 のまま保つ。ソース編集は `apply_patch` を優先し、PowerShell のテキスト入出力で書き戻さない
 - 依存の追加が要るときは、実装を止めて聞く
+- `src/game/` と `src/anticheat/` では DOM・`Date.now()`・`Math.random()` を使わない(サーバー側で同じコードを使って入力ログを再計算するため)。例外はブラウザから値を集める `src/anticheat/env.ts` の `collectEnv` だけ
 - 入力は自前のフリックキーボード UI からだけ受け付ける。OS の IME・`<input>`/`<textarea>`・`keydown` を入力経路にしない
