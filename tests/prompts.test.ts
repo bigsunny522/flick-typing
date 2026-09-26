@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TYPEABLE } from "../src/game/kana";
-import { choosePrompts, difficulty, PROMPTS } from "../src/game/prompts";
+import { breakIndexes, choosePrompts, difficulty, PROMPTS } from "../src/game/prompts";
 
 describe("prompts", () => {
   it("contains 60 prompts", () => {
@@ -8,6 +8,33 @@ describe("prompts", () => {
   });
   it("has unique ids", () => {
     expect(new Set(PROMPTS.map((prompt) => prompt.id)).size).toBe(60);
+  });
+  it("has unique text", () => {
+    expect(new Set(PROMPTS.map((prompt) => prompt.text)).size).toBe(60);
+  });
+  it("reconstructs text and reading from chunks", () => {
+    expect(
+      PROMPTS.every((prompt) => prompt.chunks!.map((chunk) => chunk[0]).join("") === prompt.text),
+    ).toBe(true);
+    expect(
+      PROMPTS.every(
+        (prompt) => prompt.chunks!.map((chunk) => chunk[1]).join("") === prompt.reading,
+      ),
+    ).toBe(true);
+  });
+  it("has no empty chunk values", () => {
+    expect(PROMPTS.every((prompt) => prompt.chunks!.every((chunk) => chunk.every(Boolean)))).toBe(
+      true,
+    );
+  });
+  it("has 20 prompts in each difficulty level", () => {
+    expect(
+      [1, 2, 3].map((level) => PROMPTS.filter((p) => difficulty(p.reading) === level).length),
+    ).toEqual([20, 20, 20]);
+  });
+  it("returns chunk break indexes", () => {
+    expect(breakIndexes(["あめあがりの", "そらに", "にじが"])).toEqual([6, 9]);
+    expect(breakIndexes(["ひとつだけ"])).toEqual([]);
   });
   it("uses only typeable readings", () => {
     expect(PROMPTS.every((p) => [...p.reading].every((c) => TYPEABLE.has(c)))).toBe(true);

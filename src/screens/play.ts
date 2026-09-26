@@ -2,6 +2,7 @@ import { analyze } from "../anticheat/behavior";
 import { inputForStroke, type KeyStroke } from "../keyboard/layout";
 import { mountKeyboard } from "../keyboard/view";
 import { reduce, type SessionState } from "../game/session";
+import { breakIndexes } from "../game/prompts";
 import { renderDebugPanel } from "../debug/panel";
 
 export type PlayOptions = {
@@ -24,6 +25,7 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   const nextView = host.querySelector<HTMLElement>("#next")!;
   const timeBar = host.querySelector<HTMLElement>(".time-bar i")!;
   const keyboard = host.querySelector<HTMLElement>("#keyboard")!;
+  const promptArea = host.querySelector<HTMLElement>(".prompt-area")!;
   const debugPanel = host.querySelector<HTMLElement>("#debug")!;
   let state = initial;
   let startedAt = 0;
@@ -34,9 +36,35 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   let seenBonuses = 0;
   let missUntil = 0;
   let seenMisses = 0;
+  let measuredPromptIndex = -1;
+  const withBreaks = (
+    text: string,
+    breaks: number[],
+    render: (char: string) => string,
+    offset = 0,
+  ) => {
+    const breakSet = new Set(breaks);
+    return [...text]
+      .map((char, index) => `${breakSet.has(index + offset) ? "\u200b" : ""}${render(char)}`)
+      .join("");
+  };
+  const adjustPromptSize = () => {
+    promptArea.style.setProperty("--reading-size", "38px");
+    promptArea.style.setProperty("--kanji-size", "23px");
+    while (promptArea.scrollHeight > promptArea.clientHeight) {
+      const readingSize = Number.parseFloat(
+        getComputedStyle(promptArea).getPropertyValue("--reading-size"),
+      );
+      if (readingSize <= 24) break;
+      const nextReadingSize = readingSize - 2;
+      promptArea.style.setProperty("--reading-size", `${nextReadingSize}px`);
+      promptArea.style.setProperty("--kanji-size", `${Math.round((nextReadingSize * 23) / 38)}px`);
+    }
+  };
   const stop = (callback: () => void) => {
     if (transitioned) return;
     transitioned = true;
+    window.removeEventListener("resize", adjustPromptSize);
     active = false;
     callback();
   };
@@ -68,7 +96,16 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     const pending = state.pending ? `<small class="pending">${state.pending}</small>` : "";
     const next = state.prompts[state.promptIndex + 1];
     nextView.innerHTML = next ? `<span>NEXT</span><b>${next.text}</b>` : "";
-    promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${prompt.text}</p><p class="reading"><span class="done">${before}</span>${pending}<span class="current${missClass}">${current}</span>${after}</p>`;
+    const chunks = prompt.chunks ?? [[prompt.text, prompt.reading] as [string, string]];
+    const readingBreaks = breakIndexes(chunks.map((chunk) => chunk[1]));
+    const kanjiBreaks = breakIndexes(chunks.map((chunk) => chunk[0]));
+    const renderReading = (char: string) => char;
+    const currentBreak = readingBreaks.includes(state.index) ? "\u200b" : "";
+    promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${withBreaks(prompt.text, kanjiBreaks, (char) => char)}</p><p class="reading"><span class="done">${withBreaks(before, readingBreaks, renderReading)}</span>${currentBreak}${pending}<span class="current${missClass}">${current}</span>${withBreaks(after, readingBreaks, renderReading, state.index + 1)}</p>`;
+    if (state.promptIndex !== measuredPromptIndex) {
+      measuredPromptIndex = state.promptIndex;
+      adjustPromptSize();
+    }
   };
   const finishIfNeeded = () => {
     if (state.finished) stop(() => options.onFinish(state, strokes));
@@ -118,5 +155,7 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     countdown.textContent = "1";
   }, 2000);
   setTimeout(start, 3000);
+  window.addEventListener("resize", adjustPromptSize);
+  void document.fonts.ready.then(adjustPromptSize);
   paint();
 }

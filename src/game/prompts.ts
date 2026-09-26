@@ -2,8 +2,22 @@ import data from "../data/prompts.json";
 import { TYPEABLE } from "./kana";
 import { mulberry32 } from "./random";
 
-export type Prompt = { id: string; text: string; reading: string };
+export type Prompt = {
+  id: string;
+  text: string;
+  reading: string;
+  chunks?: [string, string][];
+};
 export const PROMPTS = data as Prompt[];
+
+/** 改行してよい位置(その文字の直前で改行してよい index)。先頭の 0 は含めない */
+export function breakIndexes(chunks: string[]): number[] {
+  let index = 0;
+  return chunks.slice(0, -1).map((chunk) => {
+    index += [...chunk].length;
+    return index;
+  });
+}
 
 const modifierKana = new Set(
   "ぁぃぅぇぉがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽっゃゅょ",

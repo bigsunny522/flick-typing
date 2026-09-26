@@ -179,6 +179,9 @@ button {
   margin-top: auto;
 }
 .play {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   padding-bottom: calc(60vw + var(--kb-bottom-offset) + 24px);
 }
 #countdown {
@@ -266,7 +269,10 @@ button {
 .prompt-area {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   padding-top: 22px;
+  --reading-size: 38px;
+  --kanji-size: 23px;
 }
 .prompt-meta {
   color: var(--muted);
@@ -291,16 +297,21 @@ button {
 .kanji {
   margin: 12px 0 0;
   color: var(--muted);
-  font-size: 23px;
+  font-size: var(--kanji-size);
   font-weight: 700;
   line-height: 1.45;
 }
 .reading {
   margin: 4px 0 0;
-  font-size: 38px;
+  font-size: var(--reading-size);
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+.kanji {
+  word-break: keep-all;
   overflow-wrap: anywhere;
 }
 .done {
