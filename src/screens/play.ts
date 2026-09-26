@@ -4,6 +4,7 @@ import { mountKeyboard } from "../keyboard/view";
 import { reduce, type SessionState } from "../game/session";
 import { breakIndexes } from "../game/prompts";
 import { renderDebugPanel } from "../debug/panel";
+import { createReadingTicker } from "./reading-ticker";
 
 export type PlayOptions = {
   debug: boolean;
@@ -26,6 +27,10 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   const timeBar = host.querySelector<HTMLElement>(".time-bar i")!;
   const keyboard = host.querySelector<HTMLElement>("#keyboard")!;
   const promptArea = host.querySelector<HTMLElement>(".prompt-area")!;
+  const readingTickerHost = document.createElement("div");
+  readingTickerHost.className = "reading-ticker-host";
+  promptArea.append(readingTickerHost);
+  const readingTicker = createReadingTicker(readingTickerHost);
   const debugPanel = host.querySelector<HTMLElement>("#debug")!;
   let state = initial;
   let startedAt = 0;
@@ -36,43 +41,19 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   let seenBonuses = 0;
   let missUntil = 0;
   let seenMisses = 0;
-  let measuredPromptIndex = -1;
-  const withBreaks = (
-    text: string,
-    breaks: number[],
-    render: (char: string) => string,
-    offset = 0,
-  ) => {
+  const withBreaks = (text: string, breaks: number[]) => {
     const breakSet = new Set(breaks);
-    return [...text]
-      .map((char, index) => `${breakSet.has(index + offset) ? "\u200b" : ""}${render(char)}`)
-      .join("");
-  };
-  const adjustPromptSize = () => {
-    promptArea.style.setProperty("--reading-size", "38px");
-    promptArea.style.setProperty("--kanji-size", "23px");
-    while (promptArea.scrollHeight > promptArea.clientHeight) {
-      const readingSize = Number.parseFloat(
-        getComputedStyle(promptArea).getPropertyValue("--reading-size"),
-      );
-      if (readingSize <= 24) break;
-      const nextReadingSize = readingSize - 2;
-      promptArea.style.setProperty("--reading-size", `${nextReadingSize}px`);
-      promptArea.style.setProperty("--kanji-size", `${Math.round((nextReadingSize * 23) / 38)}px`);
-    }
+    return [...text].map((char, index) => `${breakSet.has(index) ? "\u200b" : ""}${char}`).join("");
   };
   const stop = (callback: () => void) => {
     if (transitioned) return;
     transitioned = true;
-    window.removeEventListener("resize", adjustPromptSize);
+    readingTicker.destroy();
     active = false;
     callback();
   };
   const paint = () => {
     const prompt = state.prompts[state.promptIndex];
-    const before = prompt.reading.slice(0, state.index);
-    const current = prompt.reading[state.index] ?? "";
-    const after = prompt.reading.slice(state.index + 1);
     const remaining = (
       Math.max(0, state.endTimeMs - (performance.now() - startedAt)) / 1000
     ).toFixed(1);
@@ -92,20 +73,17 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     }
     bonus.textContent = performance.now() < bonusUntil ? "+1秒" : "";
     perfect.innerHTML = state.lastPerfect ? '<span class="ribbon">PERFECT</span>' : "";
-    const missClass = performance.now() < missUntil ? " current-miss" : "";
-    const pending = state.pending ? `<small class="pending">${state.pending}</small>` : "";
     const next = state.prompts[state.promptIndex + 1];
     nextView.innerHTML = next ? `<span>NEXT</span><b>${next.text}</b>` : "";
     const chunks = prompt.chunks ?? [[prompt.text, prompt.reading] as [string, string]];
-    const readingBreaks = breakIndexes(chunks.map((chunk) => chunk[1]));
     const kanjiBreaks = breakIndexes(chunks.map((chunk) => chunk[0]));
-    const renderReading = (char: string) => char;
-    const currentBreak = readingBreaks.includes(state.index) ? "\u200b" : "";
-    promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${withBreaks(prompt.text, kanjiBreaks, (char) => char)}</p><p class="reading"><span class="done">${withBreaks(before, readingBreaks, renderReading)}</span>${currentBreak}${pending}<span class="current${missClass}">${current}</span>${withBreaks(after, readingBreaks, renderReading, state.index + 1)}</p>`;
-    if (state.promptIndex !== measuredPromptIndex) {
-      measuredPromptIndex = state.promptIndex;
-      adjustPromptSize();
+    if (state.promptIndex !== Number(promptView.dataset.promptIndex)) {
+      promptView.dataset.promptIndex = String(state.promptIndex);
+      promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${withBreaks(prompt.text, kanjiBreaks)}</p>`;
+      promptView.append(readingTickerHost);
+      readingTicker.setReading(prompt.reading);
     }
+    readingTicker.update(state.index, state.pending, performance.now() < missUntil);
   };
   const finishIfNeeded = () => {
     if (state.finished) stop(() => options.onFinish(state, strokes));
@@ -155,7 +133,6 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     countdown.textContent = "1";
   }, 2000);
   setTimeout(start, 3000);
-  window.addEventListener("resize", adjustPromptSize);
-  void document.fonts.ready.then(adjustPromptSize);
+  void document.fonts?.ready.then(() => readingTicker.relayout());
   paint();
 }

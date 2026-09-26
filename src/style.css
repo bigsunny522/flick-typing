@@ -271,8 +271,6 @@ button {
   min-height: 0;
   overflow: hidden;
   padding-top: 22px;
-  --reading-size: 38px;
-  --kanji-size: 23px;
 }
 .prompt-meta {
   color: var(--muted);
@@ -297,41 +295,74 @@ button {
 .kanji {
   margin: 12px 0 0;
   color: var(--muted);
-  font-size: var(--kanji-size);
+  font-size: 23px;
   font-weight: 700;
   line-height: 1.45;
-}
-.reading {
-  margin: 4px 0 0;
-  font-size: var(--reading-size);
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  word-break: keep-all;
 }
 .kanji {
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-.done {
+.reading-ticker-host {
+  position: relative;
+  height: 80px;
+  margin: 12px -24px 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0, #000 26%, #000 84%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26%, #000 84%, transparent 100%);
+}
+.reading-ticker-line {
+  display: flex;
+  width: max-content;
+  height: 64px;
+  white-space: nowrap;
+  transform: translateX(0);
+  transition: transform 0.14s ease-out;
+}
+.reading-ticker-line span {
+  position: relative;
+  flex: 0 0 auto;
+  height: 64px;
+  padding: 0 1px;
+  color: var(--fg);
+  font:
+    800 46px/64px "LINE Seed JP",
+    sans-serif;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.reading-ticker-line span.is-typed {
   color: var(--typed);
 }
-.current {
-  padding: 0 3px;
+.reading-ticker-line span.is-current {
   color: var(--primary-ink);
-  border-radius: 6px;
   background: var(--primary);
 }
-.pending {
-  display: inline-block;
-  margin-right: 2px;
+.reading-ticker-line span.is-current.is-miss {
+  background: var(--miss);
+}
+.reading-ticker-line span[data-pending]::before {
+  position: absolute;
+  top: -2px;
+  left: 50%;
   color: var(--primary-strong);
   font-size: 16px;
-  vertical-align: top;
+  line-height: 1;
+  content: attr(data-pending);
+  transform: translateX(-50%);
 }
-.current-miss {
-  background: var(--miss);
+.reading-ticker-marker {
+  position: absolute;
+  top: 70px;
+  left: 28%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-ticker-line {
+    transition: none;
+  }
 }
 .is-counting #prompt,
 .is-counting #next,
