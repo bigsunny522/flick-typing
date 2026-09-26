@@ -12,16 +12,17 @@ export type PlayOptions = {
 
 export function renderPlay(host: HTMLElement, initial: SessionState, options: PlayOptions): void {
   host.innerHTML =
-    `<main class="screen play"><div id="countdown">3</div>` +
-    '<div id="bonus"></div><div id="stats"></div><div id="combo-gauge"></div>' +
-    '<div id="perfect"></div><div id="prompt"></div>' +
-    '<div id="keyboard"></div><div id="debug"></div></main>';
+    `<main class="screen play is-counting"><div class="deco" aria-hidden="true"></div><div id="countdown">3</div>` +
+    '<div class="play-header"><div id="stats"></div></div><div class="time-bar"><i></i></div>' +
+    '<div class="prompt-area"><div id="perfect"></div><div id="prompt"></div></div>' +
+    '<div class="play-bottom"><div id="next"></div><div id="combo-gauge"></div><div id="keyboard"></div><div class="flick-only">FLICK ONLY</div></div><div id="debug"></div></main>';
   const countdown = host.querySelector<HTMLElement>("#countdown")!;
   const stats = host.querySelector<HTMLElement>("#stats")!;
-  const bonus = host.querySelector<HTMLElement>("#bonus")!;
   const gauge = host.querySelector<HTMLElement>("#combo-gauge")!;
   const perfect = host.querySelector<HTMLElement>("#perfect")!;
   const promptView = host.querySelector<HTMLElement>("#prompt")!;
+  const nextView = host.querySelector<HTMLElement>("#next")!;
+  const timeBar = host.querySelector<HTMLElement>(".time-bar i")!;
   const keyboard = host.querySelector<HTMLElement>("#keyboard")!;
   const debugPanel = host.querySelector<HTMLElement>("#debug")!;
   let state = initial;
@@ -31,6 +32,8 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   let transitioned = false;
   let bonusUntil = 0;
   let seenBonuses = 0;
+  let missUntil = 0;
+  let seenMisses = 0;
   const stop = (callback: () => void) => {
     if (transitioned) return;
     transitioned = true;
@@ -45,17 +48,27 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     const remaining = (
       Math.max(0, state.endTimeMs - (performance.now() - startedAt)) / 1000
     ).toFixed(1);
-    stats.innerHTML = `<strong class="remaining">残り ${remaining}秒</strong><div>コンボ ${state.combo}　正解 ${state.correct}</div>`;
-    gauge.innerHTML = `<div class="gauge"><i style="width:${(state.combo % 20) * 5}%"></i></div>`;
+    const urgent = Number(remaining) <= 10;
+    stats.innerHTML = `<strong class="remaining${urgent ? " urgent" : ""}">${remaining}<small>秒</small></strong><span id="bonus"></span><span>正解 <b>${state.correct}</b></span>`;
+    const bonus = stats.querySelector<HTMLElement>("#bonus")!;
+    timeBar.style.width = `${Math.min(1, Number(remaining) / 60) * 100}%`;
+    timeBar.parentElement?.classList.toggle("urgent", urgent);
+    gauge.innerHTML = `<div class="combo-row"><span class="outline-ribbon">COMBO</span><b>${state.combo}</b><span>あと ${20 - (state.combo % 20)}字で +1秒</span></div><div class="gauge"><i style="width:${(state.combo % 20) * 5}%"></i></div>`;
     if (state.bonuses.length > seenBonuses) {
       seenBonuses = state.bonuses.length;
       bonusUntil = performance.now() + 800;
     }
+    if (state.miss > seenMisses) {
+      seenMisses = state.miss;
+      missUntil = performance.now() + 200;
+    }
     bonus.textContent = performance.now() < bonusUntil ? "+1秒" : "";
-    perfect.textContent = state.lastPerfect ? "PERFECT" : "";
-    const missClass = state.lastResult === "miss" ? " current-miss" : "";
+    perfect.innerHTML = state.lastPerfect ? '<span class="ribbon">PERFECT</span>' : "";
+    const missClass = performance.now() < missUntil ? " current-miss" : "";
     const pending = state.pending ? `<small class="pending">${state.pending}</small>` : "";
-    promptView.innerHTML = `<p>${prompt.text}</p><p><span class="done">${before}</span>${pending}<span class="current${missClass}">${current}</span>${after}</p>`;
+    const next = state.prompts[state.promptIndex + 1];
+    nextView.innerHTML = next ? `<span>NEXT</span><b>${next.text}</b>` : "";
+    promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${prompt.text}</p><p class="reading"><span class="done">${before}</span>${pending}<span class="current${missClass}">${current}</span>${after}</p>`;
   };
   const finishIfNeeded = () => {
     if (state.finished) stop(() => options.onFinish(state, strokes));
@@ -87,6 +100,7 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   const start = () => {
     active = true;
     startedAt = performance.now();
+    host.querySelector(".play")?.classList.remove("is-counting");
     countdown.remove();
     const tick = () => {
       if (!active) return;

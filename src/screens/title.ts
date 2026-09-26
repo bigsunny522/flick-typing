@@ -8,6 +8,6 @@ export function renderTitle(
   debug: boolean,
   onStart: () => void,
 ): void {
-  host.innerHTML = `<main class="screen"><h1>ふりっくタイピング</h1><p>フリックだけで打って、ミスせず続けよう。</p><p>自己ベスト: ${best?.correct ?? "—"}</p>${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}<button id="start">はじめる</button></main>`;
+  host.innerHTML = `<main class="screen title-screen"><div class="deco" aria-hidden="true"></div><p class="ribbon">FLICK TYPING</p><h1>ふりっく<br />タイピング</h1><p class="intro">フリックだけで打つタイピング。<br />ミスせず続けると時間が増える。</p><div class="best"><span>自己ベスト</span><strong>${best?.correct ?? "—"}<small>字</small></strong></div>${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}<button id="start" class="primary-button">はじめる</button></main>`;
   host.querySelector<HTMLButtonElement>("#start")?.addEventListener("click", onStart);
 }

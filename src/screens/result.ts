@@ -16,14 +16,15 @@ export function renderResult(
   const total = values.correct + values.miss;
   const accuracy = total === 0 ? 0 : values.correct / total;
   const cps = values.correct / (values.endTimeMs / 1000);
-  const saveButton = onSave ? '<button id="save">ログを保存</button>' : "";
+  const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
   host.innerHTML =
-    `<main class="screen"><h1>${values.correct}</h1>` +
-    `<p>正しく打てた文字数</p><p>ミス: ${values.miss}</p>` +
-    `<p>正確率: ${(accuracy * 100).toFixed(1)}%</p>` +
-    `<p>1秒あたり: ${cps.toFixed(2)}文字</p><p>最大コンボ: ${values.maxCombo}</p>` +
-    `${values.bestUpdated ? "<p>自己ベスト更新！</p>" : ""}${saveButton}` +
-    '<button id="again">もう一度</button><button id="title">タイトルへ</button></main>';
+    `<main class="screen result-screen"><div class="deco" aria-hidden="true"></div><p class="ribbon">RESULT</p>` +
+    `<p class="result-label">正しく打てた文字数</p><div class="score">${values.correct}<small>字</small></div>` +
+    `${values.bestUpdated ? '<p class="ribbon accent-ribbon">自己ベスト更新</p>' : ""}<div class="result-grid">` +
+    `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
+    `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
+    `<p class="duration">プレイ時間 ${(values.endTimeMs / 1000).toFixed(1)}秒(ボーナス +${((values.endTimeMs - 60000) / 1000).toFixed(1)}秒)</p>` +
+    `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}<button id="title" class="secondary-button">タイトルへ</button></div></main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);

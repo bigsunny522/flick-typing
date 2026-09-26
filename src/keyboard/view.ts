@@ -18,8 +18,10 @@ export function mountKeyboard(host: HTMLElement, onStroke: (stroke: KeyStroke) =
   host.className = "keyboard";
   for (const key of KEY_ROWS.flat()) {
     const button = document.createElement("button");
-    button.className = "key";
-    button.textContent = key ? KEY_LABELS[key] : "";
+    const label = key ? KEY_LABELS[key] : "";
+    const isFunc = label === "゛゜小" || label === "、。？！";
+    button.className = `key${key ? (isFunc ? " key--func" : "") : " key--empty"}`;
+    button.textContent = label;
     if (key)
       button.addEventListener("pointerdown", (event) => {
         if (event.pointerType !== "touch") return;
