@@ -1,4 +1,4 @@
-import { analyze } from "../anticheat/behavior";
+import { analyze, type BehaviorVerdict } from "../anticheat/behavior";
 import { inputForStroke, type KeyStroke } from "../keyboard/layout";
 import { mountKeyboard } from "../keyboard/view";
 import { reduce, type SessionState } from "../game/session";
@@ -11,6 +11,8 @@ export type PlayOptions = {
   onFinish: (state: SessionState, strokes: KeyStroke[]) => void;
   onBlocked: () => void;
 };
+
+const PAINT_PROBE_LIMIT = 20;
 
 export function renderPlay(host: HTMLElement, initial: SessionState, options: PlayOptions): void {
   host.innerHTML =
@@ -32,6 +34,37 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   promptArea.append(readingTickerHost);
   const readingTicker = createReadingTicker(readingTickerHost);
   const debugPanel = host.querySelector<HTMLElement>("#debug")!;
+  const remainingValue = document.createElement("span");
+  const remainingUnit = document.createElement("small");
+  remainingUnit.textContent = "秒";
+  const remainingView = document.createElement("strong");
+  remainingView.className = "remaining";
+  remainingView.append(remainingValue, remainingUnit);
+  const bonus = document.createElement("span");
+  bonus.id = "bonus";
+  const correctValue = document.createElement("b");
+  const correctLabel = document.createElement("span");
+  correctLabel.append("正解 ", correctValue);
+  stats.append(remainingView, bonus, correctLabel);
+  const comboValue = document.createElement("b");
+  const comboHint = document.createElement("span");
+  const comboRow = document.createElement("div");
+  comboRow.className = "combo-row";
+  const comboRibbon = document.createElement("span");
+  comboRibbon.className = "outline-ribbon";
+  comboRibbon.textContent = "COMBO";
+  comboRow.append(comboRibbon, comboValue, comboHint);
+  const gaugeFill = document.createElement("i");
+  const gaugeTrack = document.createElement("div");
+  gaugeTrack.className = "gauge";
+  gaugeTrack.append(gaugeFill);
+  gauge.append(comboRow, gaugeTrack);
+  const nextLabel = document.createElement("span");
+  nextLabel.textContent = "NEXT";
+  const nextText = document.createElement("b");
+  const perfectRibbon = document.createElement("span");
+  perfectRibbon.className = "ribbon";
+  perfectRibbon.textContent = "PERFECT";
   let state = initial;
   let startedAt = 0;
   let strokes: KeyStroke[] = [];
@@ -41,6 +74,15 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   let seenBonuses = 0;
   let missUntil = 0;
   let seenMisses = 0;
+  let seenRemaining: string | null = null;
+  let seenUrgent: boolean | null = null;
+  let seenCorrect: number | null = null;
+  let seenTimeWidth: string | null = null;
+  let seenCombo: number | null = null;
+  let seenBonusText: string | null = null;
+  let seenPerfect: boolean | null = null;
+  let seenPromptIndex: number | null = null;
+  const paintLatencies: number[] = [];
   const withBreaks = (text: string, breaks: number[]) => {
     const breakSet = new Set(breaks);
     return [...text].map((char, index) => `${breakSet.has(index) ? "\u200b" : ""}${char}`).join("");
@@ -58,11 +100,30 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
       Math.max(0, state.endTimeMs - (performance.now() - startedAt)) / 1000
     ).toFixed(1);
     const urgent = Number(remaining) <= 10;
-    stats.innerHTML = `<strong class="remaining${urgent ? " urgent" : ""}">${remaining}<small>秒</small></strong><span id="bonus"></span><span>正解 <b>${state.correct}</b></span>`;
-    const bonus = stats.querySelector<HTMLElement>("#bonus")!;
-    timeBar.style.width = `${Math.min(1, Number(remaining) / 60) * 100}%`;
-    timeBar.parentElement?.classList.toggle("urgent", urgent);
-    gauge.innerHTML = `<div class="combo-row"><span class="outline-ribbon">COMBO</span><b>${state.combo}</b><span>あと ${20 - (state.combo % 20)}字で +1秒</span></div><div class="gauge"><i style="width:${(state.combo % 20) * 5}%"></i></div>`;
+    if (remaining !== seenRemaining) {
+      seenRemaining = remaining;
+      remainingValue.textContent = remaining;
+    }
+    if (urgent !== seenUrgent) {
+      seenUrgent = urgent;
+      remainingView.classList.toggle("urgent", urgent);
+      timeBar.parentElement?.classList.toggle("urgent", urgent);
+    }
+    if (state.correct !== seenCorrect) {
+      seenCorrect = state.correct;
+      correctValue.textContent = String(state.correct);
+    }
+    const timeWidth = `${Math.min(1, Number(remaining) / 60) * 100}%`;
+    if (timeWidth !== seenTimeWidth) {
+      seenTimeWidth = timeWidth;
+      timeBar.style.width = timeWidth;
+    }
+    if (state.combo !== seenCombo) {
+      seenCombo = state.combo;
+      comboValue.textContent = String(state.combo);
+      comboHint.textContent = `あと ${20 - (state.combo % 20)}字で +1秒`;
+      gaugeFill.style.width = `${(state.combo % 20) * 5}%`;
+    }
     if (state.bonuses.length > seenBonuses) {
       seenBonuses = state.bonuses.length;
       bonusUntil = performance.now() + 800;
@@ -71,14 +132,27 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
       seenMisses = state.miss;
       missUntil = performance.now() + 200;
     }
-    bonus.textContent = performance.now() < bonusUntil ? "+1秒" : "";
-    perfect.innerHTML = state.lastPerfect ? '<span class="ribbon">PERFECT</span>' : "";
-    const next = state.prompts[state.promptIndex + 1];
-    nextView.innerHTML = next ? `<span>NEXT</span><b>${next.text}</b>` : "";
-    const chunks = prompt.chunks ?? [[prompt.text, prompt.reading] as [string, string]];
-    const kanjiBreaks = breakIndexes(chunks.map((chunk) => chunk[0]));
-    if (state.promptIndex !== Number(promptView.dataset.promptIndex)) {
-      promptView.dataset.promptIndex = String(state.promptIndex);
+    const bonusText = performance.now() < bonusUntil ? "+1秒" : "";
+    if (bonusText !== seenBonusText) {
+      seenBonusText = bonusText;
+      bonus.textContent = bonusText;
+    }
+    if (state.lastPerfect !== seenPerfect) {
+      seenPerfect = state.lastPerfect;
+      if (state.lastPerfect) perfect.replaceChildren(perfectRibbon);
+      else perfect.replaceChildren();
+    }
+    if (state.promptIndex !== seenPromptIndex) {
+      seenPromptIndex = state.promptIndex;
+      const next = state.prompts[state.promptIndex + 1];
+      if (next) {
+        nextText.textContent = next.text;
+        nextView.replaceChildren(nextLabel, nextText);
+      } else {
+        nextView.replaceChildren();
+      }
+      const chunks = prompt.chunks ?? [[prompt.text, prompt.reading] as [string, string]];
+      const kanjiBreaks = breakIndexes(chunks.map((chunk) => chunk[0]));
       promptView.innerHTML = `<div class="prompt-meta"><span>No. ${String(state.promptIndex + 1).padStart(2, "0")}</span></div><p class="kanji">${withBreaks(prompt.text, kanjiBreaks)}</p>`;
       promptView.append(readingTickerHost);
       readingTicker.setReading(prompt.reading);
@@ -88,7 +162,14 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   const finishIfNeeded = () => {
     if (state.finished) stop(() => options.onFinish(state, strokes));
   };
-  mountKeyboard(keyboard, (stroke) => {
+  const probePaint = (upTimeStamp: number, verdict: BehaviorVerdict, log: KeyStroke[]) => {
+    requestAnimationFrame(() => {
+      paintLatencies.push(performance.now() - upTimeStamp);
+      if (paintLatencies.length > PAINT_PROBE_LIMIT) paintLatencies.shift();
+      renderDebugPanel(debugPanel, verdict, log, paintLatencies);
+    });
+  };
+  mountKeyboard(keyboard, (stroke, upTimeStamp) => {
     if (!active) return false;
     const input = inputForStroke(stroke);
     if (!input) return false;
@@ -103,12 +184,12 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     ];
     state = reduce(state, { type: "stroke", t: relative, input });
     const verdict = analyze(strokes);
-    if (options.debug) renderDebugPanel(debugPanel, verdict, strokes);
     if (verdict.bot && !options.debug) {
       stop(options.onBlocked);
       return false;
     }
     paint();
+    if (options.debug) probePaint(upTimeStamp, verdict, strokes);
     finishIfNeeded();
     return true;
   });

@@ -14,21 +14,26 @@ export function createReadingTicker(host: HTMLElement): ReadingTicker {
   const line = host.querySelector<HTMLElement>(".reading-ticker-line")!;
   const marker = host.querySelector<HTMLElement>(".reading-ticker-marker")!;
   let spans: HTMLSpanElement[] = [];
+  let spanLefts: number[] = [];
+  let spanWidths: number[] = [];
+  let base = 0;
   let currentIndex = -1;
   let currentPending: string | null = null;
   let currentMiss = false;
   let destroyed = false;
 
-  const position = () => {
-    if (destroyed || spans.length === 0) return;
-    const base = host.clientWidth * 0.28;
-    const current = spans[Math.min(Math.max(currentIndex, 0), spans.length - 1)];
-    line.style.transform = `translateX(${base - current.offsetLeft}px)`;
-    marker.style.width = `${current.offsetWidth}px`;
+  const measure = () => {
+    if (destroyed) return;
+    base = host.clientWidth * 0.28;
+    spanLefts = spans.map((span) => span.offsetLeft);
+    spanWidths = spans.map((span) => span.offsetWidth);
   };
 
-  const setTransition = (enabled: boolean) => {
-    line.style.transition = enabled ? "" : "none";
+  const applyPosition = () => {
+    if (destroyed || spanLefts.length === 0) return;
+    const at = Math.min(Math.max(currentIndex, 0), spanLefts.length - 1);
+    line.style.transform = `translateX(${base - spanLefts[at]}px)`;
+    marker.style.width = `${spanWidths[at]}px`;
   };
 
   const update = (index: number, pending: string | null, miss: boolean) => {
@@ -48,15 +53,17 @@ export function createReadingTicker(host: HTMLElement): ReadingTicker {
         delete span.dataset.pending;
       }
     });
-    position();
+    applyPosition();
   };
 
-  const onResize = () => position();
+  const onResize = () => {
+    measure();
+    applyPosition();
+  };
   window.addEventListener("resize", onResize);
 
   const ticker: ReadingTicker = {
     setReading(reading) {
-      setTransition(false);
       line.replaceChildren();
       spans = [...reading].map((char) => {
         const span = document.createElement("span");
@@ -67,13 +74,14 @@ export function createReadingTicker(host: HTMLElement): ReadingTicker {
       currentIndex = -1;
       currentPending = null;
       currentMiss = false;
+      measure();
       update(0, null, false);
-      position();
-      void line.offsetWidth;
-      setTransition(true);
     },
     update,
-    relayout: position,
+    relayout() {
+      measure();
+      applyPosition();
+    },
     destroy() {
       destroyed = true;
       window.removeEventListener("resize", onResize);
