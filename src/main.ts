@@ -14,6 +14,7 @@ import { loadBest, saveBest } from "./storage";
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("#app がありません。");
 const root: HTMLElement = app;
+const probe = import.meta.env.DEV && new URLSearchParams(location.search).has("probe");
 const debug = debugEnabled();
 
 function createSeed(): number {
@@ -60,6 +61,10 @@ function startGame(): void {
   });
 }
 
-document.addEventListener("contextmenu", (event) => event.preventDefault());
-document.addEventListener("gesturestart", (event) => event.preventDefault());
-showTitle();
+if (probe) {
+  void import("./probe/probe").then(({ renderProbe }) => renderProbe(root));
+} else {
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
+  document.addEventListener("gesturestart", (event) => event.preventDefault());
+  showTitle();
+}
