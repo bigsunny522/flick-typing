@@ -45,17 +45,17 @@ export function applyTheme(theme: ThemeId): void; // document.documentElement.da
 
 `--glow` は新しい変数。`:root`(= sky)にも `--glow: rgba(123, 171, 255, 0.45);` を足す。`.flick-guide.is-active` の `box-shadow: 0 6px 16px rgba(123, 171, 255, 0.45);` を `box-shadow: 0 6px 16px var(--glow);` に置き換える。
 
-| 変数 | sky(今の値) | sakura | leaf | lavender | aqua | mono |
-|---|---|---|---|---|---|---|
-| `--primary` | `#7babff` | `#ff8fb8` | `#6fd39a` | `#b39bff` | `#5fd0e0` | `#b5b5b5` |
-| `--primary-ink` | `#0b1120` | `#2a0a17` | `#06200f` | `#160b2e` | `#052126` | `#111111` |
-| `--primary-strong` | `#1d4ed8` | `#db2777` | `#15803d` | `#6d28d9` | `#0e7490` | `#404040` |
-| `--primary-tint` | `#eef4ff` | `#fff0f6` | `#ecfbf2` | `#f4f0ff` | `#ecfbfd` | `#f5f5f5` |
-| `--primary-line` | `#d6e4ff` | `#ffd6e7` | `#ccf2dc` | `#e2d9ff` | `#c9f0f5` | `#e0e0e0` |
-| `--typed` | `#9fc1ff` | `#ffb3cf` | `#9be2b9` | `#cbbcff` | `#93e0ea` | `#cfcfcf` |
-| `--deco` | `#c9dbff` | `#ffd1e2` | `#c4efd6` | `#ddd3ff` | `#c2eef4` | `#dedede` |
-| `--grid` | `rgba(123, 171, 255, 0.13)` | `rgba(255, 143, 184, 0.13)` | `rgba(111, 211, 154, 0.13)` | `rgba(179, 155, 255, 0.13)` | `rgba(95, 208, 224, 0.13)` | `rgba(181, 181, 181, 0.13)` |
-| `--glow` | `rgba(123, 171, 255, 0.45)` | `rgba(255, 143, 184, 0.45)` | `rgba(111, 211, 154, 0.45)` | `rgba(179, 155, 255, 0.45)` | `rgba(95, 208, 224, 0.45)` | `rgba(181, 181, 181, 0.45)` |
+| 変数               | sky(今の値)                 | sakura                      | leaf                        | lavender                    | aqua                       | mono                        |
+| ------------------ | --------------------------- | --------------------------- | --------------------------- | --------------------------- | -------------------------- | --------------------------- |
+| `--primary`        | `#7babff`                   | `#ff8fb8`                   | `#6fd39a`                   | `#b39bff`                   | `#5fd0e0`                  | `#b5b5b5`                   |
+| `--primary-ink`    | `#0b1120`                   | `#2a0a17`                   | `#06200f`                   | `#160b2e`                   | `#052126`                  | `#111111`                   |
+| `--primary-strong` | `#1d4ed8`                   | `#db2777`                   | `#15803d`                   | `#6d28d9`                   | `#0e7490`                  | `#404040`                   |
+| `--primary-tint`   | `#eef4ff`                   | `#fff0f6`                   | `#ecfbf2`                   | `#f4f0ff`                   | `#ecfbfd`                  | `#f5f5f5`                   |
+| `--primary-line`   | `#d6e4ff`                   | `#ffd6e7`                   | `#ccf2dc`                   | `#e2d9ff`                   | `#c9f0f5`                  | `#e0e0e0`                   |
+| `--typed`          | `#9fc1ff`                   | `#ffb3cf`                   | `#9be2b9`                   | `#cbbcff`                   | `#93e0ea`                  | `#cfcfcf`                   |
+| `--deco`           | `#c9dbff`                   | `#ffd1e2`                   | `#c4efd6`                   | `#ddd3ff`                   | `#c2eef4`                  | `#dedede`                   |
+| `--grid`           | `rgba(123, 171, 255, 0.13)` | `rgba(255, 143, 184, 0.13)` | `rgba(111, 211, 154, 0.13)` | `rgba(179, 155, 255, 0.13)` | `rgba(95, 208, 224, 0.13)` | `rgba(181, 181, 181, 0.13)` |
+| `--glow`           | `rgba(123, 171, 255, 0.45)` | `rgba(255, 143, 184, 0.45)` | `rgba(111, 211, 154, 0.45)` | `rgba(179, 155, 255, 0.45)` | `rgba(95, 208, 224, 0.45)` | `rgba(181, 181, 181, 0.45)` |
 
 - `--accent`・`--miss`・`--bg`・`--fg` などそれ以外の変数は、どのテーマでも変えない
 
@@ -111,14 +111,14 @@ export function applyTheme(theme: ThemeId): void; // document.documentElement.da
 
 表の1行ごとに `it` を1つ書く。
 
-| 確かめること | 入力 | 期待 |
-|---|---|---|
-| 次のテーマ | `nextTheme("sky")` | `"sakura"` |
-| 最後の次は最初 | `nextTheme("mono")` | `"sky"` |
-| 6回で1周 | `"sky"` から `nextTheme` を6回 | `"sky"` |
-| 一覧にある値 | `parseTheme("leaf")` | `"leaf"` |
-| 一覧にない値 | `parseTheme("red")` | `"sky"` |
-| null | `parseTheme(null)` | `"sky"` |
+| 確かめること   | 入力                           | 期待       |
+| -------------- | ------------------------------ | ---------- |
+| 次のテーマ     | `nextTheme("sky")`             | `"sakura"` |
+| 最後の次は最初 | `nextTheme("mono")`            | `"sky"`    |
+| 6回で1周       | `"sky"` から `nextTheme` を6回 | `"sky"`    |
+| 一覧にある値   | `parseTheme("leaf")`           | `"leaf"`   |
+| 一覧にない値   | `parseTheme("red")`            | `"sky"`    |
+| null           | `parseTheme(null)`             | `"sky"`    |
 
 `applyTheme` と `bindThemeTap` のテストは不要(DOM を使うため)。
 
