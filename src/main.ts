@@ -9,7 +9,8 @@ import { renderBlocked } from "./screens/blocked";
 import { renderPlay } from "./screens/play";
 import { renderResult } from "./screens/result";
 import { renderTitle } from "./screens/title";
-import { loadBest, loadMode, saveBest, type PlayMode } from "./storage";
+import { loadBest, loadMode, loadTheme, saveBest, type PlayMode } from "./storage";
+import { applyTheme, parseTheme } from "./theme";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("#app がありません。");
@@ -74,6 +75,8 @@ function startGame(mode: PlayMode): void {
     },
   });
 }
+
+applyTheme(parseTheme(loadTheme()));
 
 if (probe) {
   void import("./probe/probe").then(({ renderProbe }) => renderProbe(root));

@@ -5,6 +5,7 @@ const BEST_KEYS: Record<PlayMode, string> = {
   native: "flick-typing:best:native:v1",
 };
 const MODE_KEY = "flick-typing:mode:v1";
+const THEME_KEY = "flick-typing:theme:v1";
 export function loadBest(mode: PlayMode): Best | null {
   try {
     const v = localStorage.getItem(BEST_KEYS[mode]);
@@ -31,6 +32,20 @@ export function loadMode(): PlayMode {
 export function saveMode(mode: PlayMode) {
   try {
     localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    /* storage is optional */
+  }
+}
+export function loadTheme(): string | null {
+  try {
+    return localStorage.getItem(THEME_KEY);
+  } catch {
+    return null;
+  }
+}
+export function saveTheme(theme: string) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
   } catch {
     /* storage is optional */
   }

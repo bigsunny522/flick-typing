@@ -12,6 +12,7 @@
   --typed: #9fc1ff;
   --deco: #c9dbff;
   --grid: rgba(123, 171, 255, 0.13);
+  --glow: rgba(123, 171, 255, 0.45);
   --accent: #f59e0b;
   --accent-ink: #1e1b0f;
   --miss: #f87171;
@@ -20,6 +21,61 @@
   --kb-height-ratio: 0.58;
   --kb-bottom-offset: 40px;
   --kb-height: calc(100vw * var(--kb-height-ratio));
+}
+:root[data-theme="sakura"] {
+  --primary: #ff8fb8;
+  --primary-ink: #2a0a17;
+  --primary-strong: #db2777;
+  --primary-tint: #fff0f6;
+  --primary-line: #ffd6e7;
+  --typed: #ffb3cf;
+  --deco: #ffd1e2;
+  --grid: rgba(255, 143, 184, 0.13);
+  --glow: rgba(255, 143, 184, 0.45);
+}
+:root[data-theme="leaf"] {
+  --primary: #6fd39a;
+  --primary-ink: #06200f;
+  --primary-strong: #15803d;
+  --primary-tint: #ecfbf2;
+  --primary-line: #ccf2dc;
+  --typed: #9be2b9;
+  --deco: #c4efd6;
+  --grid: rgba(111, 211, 154, 0.13);
+  --glow: rgba(111, 211, 154, 0.45);
+}
+:root[data-theme="lavender"] {
+  --primary: #b39bff;
+  --primary-ink: #160b2e;
+  --primary-strong: #6d28d9;
+  --primary-tint: #f4f0ff;
+  --primary-line: #e2d9ff;
+  --typed: #cbbcff;
+  --deco: #ddd3ff;
+  --grid: rgba(179, 155, 255, 0.13);
+  --glow: rgba(179, 155, 255, 0.45);
+}
+:root[data-theme="aqua"] {
+  --primary: #5fd0e0;
+  --primary-ink: #052126;
+  --primary-strong: #0e7490;
+  --primary-tint: #ecfbfd;
+  --primary-line: #c9f0f5;
+  --typed: #93e0ea;
+  --deco: #c2eef4;
+  --grid: rgba(95, 208, 224, 0.13);
+  --glow: rgba(95, 208, 224, 0.45);
+}
+:root[data-theme="mono"] {
+  --primary: #b5b5b5;
+  --primary-ink: #111111;
+  --primary-strong: #404040;
+  --primary-tint: #f5f5f5;
+  --primary-line: #e0e0e0;
+  --typed: #cfcfcf;
+  --deco: #dedede;
+  --grid: rgba(181, 181, 181, 0.13);
+  --glow: rgba(181, 181, 181, 0.45);
 }
 * {
   box-sizing: border-box;
@@ -92,6 +148,18 @@ button {
   height: 12px;
   border-color: var(--primary);
   transform: rotate(45deg);
+}
+.theme-tap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  width: 88px;
+  height: 80px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 .ribbon,
 .outline-ribbon {
@@ -506,7 +574,7 @@ button {
   font-size: 25px;
   font-weight: 800;
   background: var(--primary);
-  box-shadow: 0 6px 16px rgba(123, 171, 255, 0.45);
+  box-shadow: 0 6px 16px var(--glow);
 }
 .flick-only {
   position: fixed;
