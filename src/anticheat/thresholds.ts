@@ -7,3 +7,7 @@ export const TELEPORT_RATIO = 0.8;
 export const SAME_POINT = 8;
 export const FAST_MEDIAN = 40;
 export const REGULAR_CV = 0.05;
+export const NATIVE_PHYSICAL_KEYS = 3;
+export const NATIVE_SOFT_KB_RATIO = 0.85;
+export const NATIVE_NO_KB_MIN = 10;
+export const NATIVE_NO_KB_SHARE = 0.8;

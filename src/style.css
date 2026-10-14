@@ -179,6 +179,32 @@ button {
 .title-screen .primary-button {
   margin-top: auto;
 }
+.mode-select {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 32px;
+}
+.mode-select button {
+  height: 44px;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--bg);
+}
+.mode-select button[aria-pressed="true"] {
+  color: var(--primary-ink);
+  border-color: var(--primary-strong);
+  background: var(--primary);
+}
+.native-hint {
+  margin: 10px 0 0;
+  color: var(--subtle);
+  font-size: 11px;
+  font-weight: 700;
+}
 .play {
   height: 100vh;
   height: 100dvh;
@@ -494,6 +520,47 @@ button {
   letter-spacing: 0.4em;
   text-align: center;
 }
+.play.is-native {
+  position: fixed;
+  top: var(--vv-top, 0px);
+  right: 0;
+  left: 0;
+  min-height: 0;
+  height: var(--vv-height, 100dvh);
+  padding-bottom: 16px;
+}
+.play.is-native.is-compact {
+  padding-top: 12px;
+  padding-bottom: 8px;
+}
+.play.is-native.is-compact .play-header {
+  min-height: 40px;
+  margin-top: 8px;
+}
+.play.is-native.is-compact .time-bar {
+  margin-top: 10px;
+}
+.play.is-native.is-compact .prompt-area {
+  padding-top: 8px;
+}
+.play.is-native.is-compact .combo-row {
+  margin-bottom: 4px;
+}
+.play.is-native.is-compact #next,
+.play.is-native.is-compact .deco {
+  display: none;
+}
+.reopen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  place-items: center;
+  padding: 0 24px;
+}
+.reopen-overlay.is-open {
+  display: grid;
+}
 .result-screen {
   padding-top: 80px;
 }
@@ -502,6 +569,16 @@ button {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+.result-mode {
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.result-screen .result-label {
+  margin-top: 4px;
 }
 .score {
   position: relative;

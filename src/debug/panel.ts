@@ -1,5 +1,7 @@
 import type { BehaviorVerdict } from "../anticheat/behavior";
 import type { KeyStroke } from "../keyboard/layout";
+import type { NativeEditLog } from "../anticheat/native";
+import type { JudgeResult } from "../game/judge";
 
 export function debugEnabled(): boolean {
   return new URLSearchParams(location.search).has("debug");
@@ -29,6 +31,42 @@ export function renderDebugPanel(
     "<table><thead><tr><th>key</th><th>dir</th><th>ms</th><th>moves</th>" +
     "<th>w</th><th>h</th><th>p</th></tr></thead><tbody>" +
     `${rows}</tbody></table></aside>`;
+}
+
+export function renderNativeDebugPanel(
+  host: HTMLElement,
+  verdict: BehaviorVerdict,
+  edits: (NativeEditLog & { result: JudgeResult | null })[],
+  viewport: { height: number; top: number; ratio: number },
+): void {
+  const recent = edits.slice(-10);
+  const rows = recent
+    .map((edit) => {
+      const result = edit.result ?? "—";
+      return (
+        `<tr><td>${escapeHtml(edit.inputType)}</td>` +
+        `<td>${escapeHtml(edit.before)} → ${escapeHtml(edit.after)}</td>` +
+        `<td>${result}</td><td>${edit.viewportRatio.toFixed(2)}</td></tr>`
+      );
+    })
+    .join("");
+  host.innerHTML =
+    `<aside class="debug-panel"><div>${verdict.bot ? "bot" : "ok"}</div>` +
+    `<div>${verdict.reasons.join(", ")}</div><pre>${JSON.stringify(verdict.metrics)}</pre>` +
+    `<div>viewport ${Math.round(viewport.height)}px top ${Math.round(viewport.top)}px ` +
+    `ratio ${viewport.ratio.toFixed(2)}</div>` +
+    "<table><thead><tr><th>inputType</th><th>edit</th><th>result</th><th>ratio</th>" +
+    "</tr></thead><tbody>" +
+    `${rows}</tbody></table></aside>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function summarizeLatencies(values: number[]): string {

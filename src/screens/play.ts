@@ -1,25 +1,44 @@
 import { analyze, type BehaviorVerdict } from "../anticheat/behavior";
+import { analyzeNative, type NativeEditLog, type NativeKeyLog } from "../anticheat/native";
 import { inputForStroke, type KeyStroke } from "../keyboard/layout";
 import { mountKeyboard } from "../keyboard/view";
 import { reduce, type SessionState } from "../game/session";
 import { breakIndexes } from "../game/prompts";
-import { renderDebugPanel } from "../debug/panel";
+import { inputForEdit } from "../game/native-edit";
+import type { JudgeResult } from "../game/judge";
+import type { PlayMode } from "../storage";
+import { renderDebugPanel, renderNativeDebugPanel } from "../debug/panel";
+import { mountNativeField, type NativeField } from "../native/field";
 import { createReadingTicker } from "./reading-ticker";
 
 export type PlayOptions = {
+  mode: PlayMode;
   debug: boolean;
-  onFinish: (state: SessionState, strokes: KeyStroke[]) => void;
+  onFinish: (
+    state: SessionState,
+    payload: { mode: "flick"; strokes: KeyStroke[] } | { mode: "native"; edits: NativeEditLog[] },
+  ) => void;
   onBlocked: () => void;
 };
 
 const PAINT_PROBE_LIMIT = 20;
+const COMPACT_VIEWPORT_HEIGHT = 400;
 
 export function renderPlay(host: HTMLElement, initial: SessionState, options: PlayOptions): void {
+  const isNative = options.mode === "native";
   host.innerHTML =
-    `<main class="screen play is-counting"><div class="deco" aria-hidden="true"></div><div id="countdown">3</div>` +
+    `<main class="screen play${isNative ? " is-native" : ""} is-counting">` +
+    `<div class="deco" aria-hidden="true"></div><div id="countdown">3</div>` +
     '<div class="play-header"><div id="stats"></div></div><div class="time-bar"><i></i></div>' +
     '<div class="prompt-area"><div id="perfect"></div><div id="prompt"></div></div>' +
-    '<div class="play-bottom"><div id="next"></div><div id="combo-gauge"></div><div id="keyboard"></div><div class="flick-only">FLICK ONLY</div></div><div id="debug"></div></main>';
+    '<div class="play-bottom"><div id="next"></div><div id="combo-gauge"></div>' +
+    (isNative ? "" : '<div id="keyboard"></div><div class="flick-only">FLICK ONLY</div>') +
+    "</div>" +
+    (isNative
+      ? '<div class="reopen-overlay" id="reopen"><button type="button" class="primary-button reopen-button">タップしてキーボードを出す</button></div>'
+      : "") +
+    `<div id="debug"></div></main>`;
+  const playView = host.querySelector<HTMLElement>(".play")!;
   const countdown = host.querySelector<HTMLElement>("#countdown")!;
   const stats = host.querySelector<HTMLElement>("#stats")!;
   const gauge = host.querySelector<HTMLElement>("#combo-gauge")!;
@@ -27,7 +46,8 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   const promptView = host.querySelector<HTMLElement>("#prompt")!;
   const nextView = host.querySelector<HTMLElement>("#next")!;
   const timeBar = host.querySelector<HTMLElement>(".time-bar i")!;
-  const keyboard = host.querySelector<HTMLElement>("#keyboard")!;
+  const keyboard = host.querySelector<HTMLElement>("#keyboard");
+  const reopenOverlay = host.querySelector<HTMLElement>("#reopen");
   const promptArea = host.querySelector<HTMLElement>(".prompt-area")!;
   const readingTickerHost = document.createElement("div");
   readingTickerHost.className = "reading-ticker-host";
@@ -68,6 +88,11 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   let state = initial;
   let startedAt = 0;
   let strokes: KeyStroke[] = [];
+  let edits: NativeEditLog[] = [];
+  let editResults: (JudgeResult | null)[] = [];
+  let keys: NativeKeyLog[] = [];
+  let field: NativeField | null = null;
+  let lastViewport = { height: 0, top: 0, ratio: 0 };
   let active = false;
   let transitioned = false;
   let bonusUntil = 0;
@@ -92,6 +117,7 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     transitioned = true;
     readingTicker.destroy();
     active = false;
+    field?.destroy();
     callback();
   };
   const paint = () => {
@@ -160,7 +186,10 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
     readingTicker.update(state.index, state.pending, performance.now() < missUntil);
   };
   const finishIfNeeded = () => {
-    if (state.finished) stop(() => options.onFinish(state, strokes));
+    if (!state.finished) return;
+    stop(() =>
+      options.onFinish(state, isNative ? { mode: "native", edits } : { mode: "flick", strokes }),
+    );
   };
   const probePaint = (upTimeStamp: number, verdict: BehaviorVerdict, log: KeyStroke[]) => {
     requestAnimationFrame(() => {
@@ -169,34 +198,100 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
       renderDebugPanel(debugPanel, verdict, log, paintLatencies);
     });
   };
-  mountKeyboard(keyboard, (stroke, upTimeStamp) => {
-    if (!active) return false;
-    const input = inputForStroke(stroke);
-    if (!input) return false;
-    const relative = stroke.up.t - startedAt;
-    strokes = [
-      ...strokes,
+  if (keyboard) {
+    mountKeyboard(keyboard, (stroke, upTimeStamp) => {
+      if (!active) return false;
+      const input = inputForStroke(stroke);
+      if (!input) return false;
+      const relative = stroke.up.t - startedAt;
+      strokes = [
+        ...strokes,
+        {
+          ...stroke,
+          down: { ...stroke.down, t: stroke.down.t - startedAt },
+          up: { ...stroke.up, t: relative },
+        },
+      ];
+      state = reduce(state, { type: "stroke", t: relative, input });
+      const verdict = analyze(strokes);
+      if (verdict.bot && !options.debug) {
+        stop(options.onBlocked);
+        return false;
+      }
+      paint();
+      if (options.debug) probePaint(upTimeStamp, verdict, strokes);
+      finishIfNeeded();
+      return true;
+    });
+  }
+  const onEdit = (edit: {
+    inputType: string;
+    before: string;
+    after: string;
+    timeStamp: number;
+    trusted: boolean;
+  }) => {
+    if (!active) return;
+    const input = inputForEdit(edit);
+    if (!input) return;
+    const t = edit.timeStamp - startedAt;
+    edits = [
+      ...edits,
       {
-        ...stroke,
-        down: { ...stroke.down, t: stroke.down.t - startedAt },
-        up: { ...stroke.up, t: relative },
+        t,
+        inputType: edit.inputType,
+        before: edit.before,
+        after: edit.after,
+        trusted: edit.trusted,
+        viewportRatio: lastViewport.ratio,
       },
     ];
-    state = reduce(state, { type: "stroke", t: relative, input });
-    const verdict = analyze(strokes);
+    const previousPromptIndex = state.promptIndex;
+    state = reduce(state, { type: "stroke", t, input });
+    editResults = [...editResults, state.lastResult];
+    const verdict = analyzeNative(edits, keys);
     if (verdict.bot && !options.debug) {
       stop(options.onBlocked);
-      return false;
+      return;
     }
+    if (state.promptIndex !== previousPromptIndex || input.kind === "reject") field?.clear();
     paint();
-    if (options.debug) probePaint(upTimeStamp, verdict, strokes);
+    if (options.debug) {
+      const paired = edits.map((edit, index) => ({ ...edit, result: editResults[index] ?? null }));
+      renderNativeDebugPanel(debugPanel, verdict, paired, lastViewport);
+    }
     finishIfNeeded();
-    return true;
-  });
+  };
+  const onKey = (key: { code: string; timeStamp: number; trusted: boolean }) => {
+    if (!active) return;
+    keys = [...keys, { t: key.timeStamp - startedAt, code: key.code, trusted: key.trusted }];
+  };
+  const onKeyboardChange = (shown: boolean) => {
+    reopenOverlay?.classList.toggle("is-open", !shown);
+  };
+  const onViewport = (view: { height: number; top: number; ratio: number }) => {
+    lastViewport = view;
+    playView.style.setProperty("--vv-height", `${view.height}px`);
+    playView.style.setProperty("--vv-top", `${view.top}px`);
+    playView.classList.toggle("is-compact", view.height < COMPACT_VIEWPORT_HEIGHT);
+  };
+  if (isNative) {
+    playView.addEventListener("pointerdown", (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".reopen-button")) return;
+      event.preventDefault();
+    });
+    host
+      .querySelector<HTMLButtonElement>(".reopen-button")
+      ?.addEventListener("click", () => field?.reopen());
+    field = mountNativeField(playView, { onEdit, onKey, onKeyboardChange, onViewport });
+    field.focus();
+  }
   const start = () => {
+    field?.clear();
     active = true;
     startedAt = performance.now();
-    host.querySelector(".play")?.classList.remove("is-counting");
+    playView.classList.remove("is-counting");
     countdown.remove();
     const tick = () => {
       if (!active) return;

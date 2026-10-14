@@ -51,4 +51,21 @@ describe("session", () => {
       actions.reduce((state, action) => reduce(state, action), createSession(8, [short]));
     expect(replay()).toEqual(replay());
   });
+  it("clears pending when a reject arrives while pending", () => {
+    let state = createSession(1, [{ id: "pa", text: "ぱ", reading: "ぱ" }]);
+    state = reduce(state, stroke(0, "は"));
+    expect(state.pending).toBe("は");
+    state = reduce(state, { type: "stroke", t: 10, input: { kind: "reject" } });
+    expect(state.pending).toBeNull();
+    expect(state.miss).toBe(1);
+  });
+  it("keeps combo and miss count on cancel", () => {
+    let state = createSession(1, [{ id: "pair", text: "あい", reading: "あい" }]);
+    state = reduce(state, stroke(0));
+    state = reduce(state, { type: "stroke", t: 10, input: { kind: "cancel" } });
+    expect(state.index).toBe(1);
+    expect(state.combo).toBe(1);
+    expect(state.miss).toBe(0);
+    expect(state.lastResult).toBe("cancel");
+  });
 });

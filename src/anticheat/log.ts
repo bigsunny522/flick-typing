@@ -1,15 +1,20 @@
 import type { Prompt } from "../game/prompts";
 import { createSession, reduce } from "../game/session";
 import { inputForStroke, type KeyStroke } from "../keyboard/layout";
+import { inputForEdit } from "../game/native-edit";
 import type { JudgeResult } from "../game/judge";
 import { RULES_VERSION } from "../game/rules";
 import type { EnvSnapshot } from "./env";
+import type { NativeEditLog } from "./native";
+import type { PlayMode } from "../storage";
 
 export type PlayLog = {
   rulesVersion: number;
+  mode: PlayMode;
   seed: number;
   promptIds: string[];
-  strokes: (KeyStroke & { result: JudgeResult })[];
+  strokes: (KeyStroke & { result: JudgeResult })[]; // native のときは []
+  edits: (NativeEditLog & { result: JudgeResult })[]; // flick のときは []
   final: { correct: number; miss: number; maxCombo: number; endTimeMs: number };
   env: EnvSnapshot;
   debug: boolean;
@@ -35,17 +40,52 @@ export function replay(seed: number, prompts: Prompt[], strokes: KeyStroke[]): P
     },
     promptIds: state.promptIds,
     strokes: replayed,
+    edits: [],
+    mode: "flick",
     rulesVersion: RULES_VERSION,
     seed,
-    env: {
-      userAgent: "",
-      maxTouchPoints: 0,
-      coarsePointer: false,
-      webdriver: false,
-      uaData: null,
-      screenWidth: 0,
-      screenHeight: 0,
-    },
+    env: emptyEnv(),
     debug: false,
+  };
+}
+
+export function replayNative(seed: number, prompts: Prompt[], edits: NativeEditLog[]): PlayLog {
+  let state = createSession(seed, prompts);
+  const replayed: (NativeEditLog & { result: JudgeResult })[] = [];
+  for (const edit of edits) {
+    const input = inputForEdit(edit);
+    if (!input) continue;
+    if (state.finished || edit.t >= state.endTimeMs) continue;
+    state = reduce(state, { type: "stroke", t: edit.t, input });
+    const result = state.lastResult ?? "miss";
+    replayed.push({ ...edit, result });
+  }
+  return {
+    final: {
+      correct: state.correct,
+      miss: state.miss,
+      maxCombo: state.maxCombo,
+      endTimeMs: state.endTimeMs,
+    },
+    promptIds: state.promptIds,
+    strokes: [],
+    edits: replayed,
+    mode: "native",
+    rulesVersion: RULES_VERSION,
+    seed,
+    env: emptyEnv(),
+    debug: false,
+  };
+}
+
+function emptyEnv(): EnvSnapshot {
+  return {
+    userAgent: "",
+    maxTouchPoints: 0,
+    coarsePointer: false,
+    webdriver: false,
+    uaData: null,
+    screenWidth: 0,
+    screenHeight: 0,
   };
 }

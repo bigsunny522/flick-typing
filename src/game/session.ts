@@ -59,6 +59,7 @@ export function reduce(state: SessionState, action: Action): SessionState {
       miss: state.miss + 1,
       combo: 0,
       currentMiss: true,
+      pending: judged.pending,
       lastResult: judged.result,
       lastBonusMs: null,
       lastPerfect: false,

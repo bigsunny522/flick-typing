@@ -1,9 +1,12 @@
+import type { PlayMode } from "../storage";
+
 export type ResultValues = {
   correct: number;
   miss: number;
   maxCombo: number;
   endTimeMs: number;
   bestUpdated: boolean;
+  mode: PlayMode;
 };
 
 export function renderResult(
@@ -19,6 +22,7 @@ export function renderResult(
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
   host.innerHTML =
     `<main class="screen result-screen"><div class="deco" aria-hidden="true"></div><p class="ribbon">RESULT</p>` +
+    `<p class="result-mode">${modeLabel(values.mode)}</p>` +
     `<p class="result-label">正しく打てた文字数</p><div class="score">${values.correct}<small>字</small></div>` +
     `${values.bestUpdated ? '<p class="ribbon accent-ribbon">自己ベスト更新</p>' : ""}<div class="result-grid">` +
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
@@ -28,4 +32,8 @@ export function renderResult(
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
+}
+
+function modeLabel(mode: PlayMode): string {
+  return mode === "native" ? "スマホのキーボード" : "フリックキーボード";
 }

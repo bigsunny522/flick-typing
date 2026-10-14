@@ -4,12 +4,12 @@ import { choosePrompts, PROMPTS } from "./game/prompts";
 import { createSession } from "./game/session";
 import { debugEnabled } from "./debug/panel";
 import { downloadLog } from "./debug/panel";
-import { replay } from "./anticheat/log";
+import { replay, replayNative } from "./anticheat/log";
 import { renderBlocked } from "./screens/blocked";
 import { renderPlay } from "./screens/play";
 import { renderResult } from "./screens/result";
 import { renderTitle } from "./screens/title";
-import { loadBest, saveBest } from "./storage";
+import { loadBest, loadMode, saveBest, type PlayMode } from "./storage";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("#app がありません。");
@@ -26,37 +26,51 @@ function createSeed(): number {
 function showTitle(): void {
   const verdict = checkEnv(collectEnv());
   if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
-  renderTitle(root, loadBest(), verdict, debug, startGame);
+  renderTitle(root, loadMode(), loadBest, verdict, debug, startGame);
 }
 
-function startGame(): void {
+function startGame(mode: PlayMode): void {
   const verdict = checkEnv(collectEnv());
   if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
   const seed = createSeed();
   const session = createSession(seed, choosePrompts(seed, PROMPTS, 200));
   renderPlay(root, session, {
+    mode,
     debug,
     onBlocked: () => renderBlocked(root, "automation"),
-    onFinish: (final, strokes) => {
+    onFinish: (final, payload) => {
       const total = final.correct + final.miss;
       const accuracy = total === 0 ? 0 : final.correct / total;
       const cps = final.correct / (final.endTimeMs / 1000);
-      const previous = loadBest();
+      const previous = loadBest(mode);
       const bestUpdated = !debug && (!previous || final.correct > previous.correct);
       if (bestUpdated)
-        saveBest({ correct: final.correct, accuracy, cps, date: new Date().toISOString() });
+        saveBest(mode, {
+          correct: final.correct,
+          accuracy,
+          cps,
+          date: new Date().toISOString(),
+        });
       const result = {
         correct: final.correct,
         miss: final.miss,
         maxCombo: final.maxCombo,
         endTimeMs: final.endTimeMs,
         bestUpdated,
+        mode,
       };
       const save = debug
         ? () =>
-            downloadLog({ ...replay(seed, final.prompts, strokes), seed, env: collectEnv(), debug })
+            downloadLog({
+              ...(payload.mode === "flick"
+                ? replay(seed, final.prompts, payload.strokes)
+                : replayNative(seed, final.prompts, payload.edits)),
+              seed,
+              env: collectEnv(),
+              debug,
+            })
         : undefined;
-      renderResult(root, result, startGame, showTitle, save);
+      renderResult(root, result, () => startGame(mode), showTitle, save);
     },
   });
 }
