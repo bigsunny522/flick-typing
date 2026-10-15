@@ -993,3 +993,56 @@ button {
   border: 1px solid var(--line);
   background: var(--bg);
 }
+.perfect-ribbon {
+  margin: 16px 0 8px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  font-size: 22px;
+  animation: perfect-pop 0.5s ease-out both;
+}
+@keyframes perfect-pop {
+  0% {
+    transform: scale(0.4) skewX(-14deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.15) skewX(-14deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) skewX(-14deg);
+    opacity: 1;
+  }
+}
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  top: -12px;
+  left: calc(var(--x) * 1%);
+  width: 6px;
+  height: 10px;
+  background: var(--color);
+  animation: confetti-fall var(--duration) var(--delay) ease-in both;
+}
+@keyframes confetti-fall {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate(var(--drift), 110vh) rotate(var(--spin));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+  .perfect-ribbon {
+    animation: none;
+  }
+}

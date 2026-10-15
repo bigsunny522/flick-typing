@@ -3,6 +3,7 @@ import { collectEnv, checkEnv } from "./anticheat/env";
 import { choosePrompts, PROMPTS } from "./game/prompts";
 import { createSession } from "./game/session";
 import { PASSAGES, passageFor } from "./game/endurance";
+import { isPerfectRun } from "./game/perfect";
 import { debugEnabled } from "./debug/panel";
 import { downloadLog } from "./debug/panel";
 import { replay, replayEndurance, replayNative } from "./anticheat/log";
@@ -91,6 +92,7 @@ function startGame(mode: PlayMode): void {
         endTimeMs: final.endTimeMs,
         bestUpdated,
         mode,
+        perfect: isPerfectRun(final.correct, final.miss),
       };
       const save = debug
         ? () =>
