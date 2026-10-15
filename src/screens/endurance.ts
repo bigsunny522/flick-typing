@@ -23,6 +23,7 @@ export type EnduranceOptions = {
   debug: boolean;
   onFinish: (state: EnduranceState, payload: EndurancePayload) => void;
   onBlocked: () => void;
+  onRetry: () => void;
 };
 
 const COMPACT_VIEWPORT_HEIGHT = 400;
@@ -39,7 +40,9 @@ export function renderEndurance(
   host.innerHTML =
     `<main class="screen play endurance${isNative ? " is-native" : ""} is-counting">` +
     `<div class="deco" aria-hidden="true"></div><div id="countdown">3</div>` +
-    '<div class="play-header"><div id="stats"></div></div><div class="time-bar"><i></i></div>' +
+    '<div class="play-header"><div id="stats"></div>' +
+    '<button type="button" class="retry-button" aria-label="最初からやり直す">↻</button></div>' +
+    '<div class="time-bar"><i></i></div>' +
     '<div class="prompt-area"><div id="prompt"></div></div>' +
     '<div class="play-bottom"><div id="next"></div>' +
     (isNative ? "" : '<div id="keyboard"></div><div class="flick-only">FLICK ONLY</div>') +
@@ -47,6 +50,11 @@ export function renderEndurance(
     (isNative
       ? '<div class="reopen-overlay" id="reopen"><button type="button" class="primary-button reopen-button">タップしてキーボードを出す</button></div>'
       : "") +
+    '<div class="retry-confirm" id="retry-confirm"><div class="retry-confirm-box">' +
+    "<p>最初からやり直しますか?</p>" +
+    '<button type="button" class="primary-button retry-yes">やり直す</button>' +
+    '<button type="button" class="secondary-button retry-no">続ける</button>' +
+    "</div></div>" +
     "</main>";
   const playView = host.querySelector<HTMLElement>(".play")!;
   const countdown = host.querySelector<HTMLElement>("#countdown")!;
@@ -269,7 +277,24 @@ export function renderEndurance(
     field = mountNativeField(playView, { onEdit, onKey, onKeyboardChange, onViewport });
     field.focus();
   }
+  const retryConfirm = host.querySelector<HTMLElement>("#retry-confirm");
+  const retryButton = host.querySelector<HTMLButtonElement>(".retry-button");
+  const retryYes = retryConfirm?.querySelector<HTMLButtonElement>(".retry-yes");
+  const retryNo = retryConfirm?.querySelector<HTMLButtonElement>(".retry-no");
+  const canRetry = () => !transitioned && !state.finished;
+  retryButton?.addEventListener("click", () => {
+    if (!canRetry()) return;
+    retryConfirm?.classList.add("is-open");
+  });
+  retryNo?.addEventListener("click", () => {
+    retryConfirm?.classList.remove("is-open");
+  });
+  retryYes?.addEventListener("click", () => {
+    if (!canRetry()) return;
+    stop(options.onRetry);
+  });
   const start = () => {
+    if (transitioned) return;
     field?.clear();
     active = true;
     startedAt = performance.now();

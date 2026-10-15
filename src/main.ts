@@ -70,6 +70,7 @@ function startGame(mode: PlayMode): void {
     mode,
     debug,
     onBlocked: () => renderBlocked(root, "automation"),
+    onRetry: () => startGame(mode),
     onFinish: (final, payload) => {
       const total = final.correct + final.miss;
       const accuracy = total === 0 ? 0 : final.correct / total;
@@ -119,6 +120,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
     mode,
     debug,
     onBlocked: () => renderBlocked(root, "automation"),
+    onRetry: () => startEnduranceRound(mode, dateKey),
     onFinish: (final, payload) => {
       const previous = loadEnduranceBest(mode, dateKey);
       const bestUpdated = !debug && (!previous || final.correct > previous.correct);

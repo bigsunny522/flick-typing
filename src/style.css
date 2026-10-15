@@ -363,6 +363,20 @@ button {
   height: 48px;
   margin-top: 32px;
 }
+.retry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  background: none;
+}
 #stats {
   display: flex;
   flex: 1;
@@ -680,6 +694,29 @@ button {
 .play.is-native.is-compact #next,
 .play.is-native.is-compact .deco {
   display: none;
+}
+.retry-confirm {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: none;
+  place-items: center;
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+}
+.retry-confirm.is-open {
+  display: grid;
+}
+.retry-confirm-box {
+  display: grid;
+  gap: 14px;
+  width: min(320px, 100%);
+}
+.retry-confirm-box p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
 }
 .reopen-overlay {
   position: absolute;
