@@ -172,6 +172,7 @@ export function loadPlayerId(): string;
 
 - キーは `"flick-typing:player:v1"`
 - 保存されていて形が正しければそれを返す。なければ `crypto.randomUUID()` で作って保存し、それを返す
+- ID の生成は `crypto.randomUUID` があればそれを使い、なければ `crypto.getRandomValues` で 16 バイトを作って UUID v4 の形(`xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`、小文字の16進)に整える。`crypto.randomUUID` は https か localhost でしか使えず、`npm run dev` をスマホから LAN の IP(http)で開くと存在しない。`main.ts` は送るかどうかを決める前に `loadPlayerId()` を呼ぶので、ここで例外を出すと結果画面が出なくなる
 - localStorage が使えないときは、作った ID をそのまま返す(保存はしない)。モジュール内の変数に覚えておき、同じページを開いている間は同じ ID を返す
 
 ### 4. 送信(`src/report.ts`)
