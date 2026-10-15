@@ -23,7 +23,8 @@
 - `src/stats/payload.ts`(新規) — 送るデータの型と、受け取ったデータのチェック(純粋な関数)
 - `src/stats/summary.ts`(新規) — 自己ベストの集計・分布・上位◯%の計算と、日本時間の日付キー(純粋な関数)
 - `src/report.ts`(新規) — プレイ結果をサーバーへ送る(ブラウザ側)
-- `src/storage.ts` — 端末の匿名 ID の読み書きを足す
+- `src/game/mode.ts`(新規) — `PlayMode` 型だけを置く(`src/storage.ts` から移す)
+- `src/storage.ts` — 端末の匿名 ID の読み書きを足す。`PlayMode` は `src/game/mode.ts` から再 export する(`export type { PlayMode } from "./game/mode"`。既存の import 元を変えずに済ませるため)
 - `src/main.ts` — `onFinish` で結果を送る。`todayKey` を `src/stats/summary.ts` の関数に置き換える
 - `stats.html`(新規) — 集計ページの HTML
 - `src/stats-page/main.ts`(新規) — 集計ページの描画
@@ -38,7 +39,7 @@
 
 触らないファイル:
 
-- `src/game/**`(`RULES` と `RULES_VERSION` は読むだけ。集計のための定数を `rules.ts` に混ぜない)
+- `src/game/**`(新規の `mode.ts` を除く。`RULES` と `RULES_VERSION` は読むだけ。集計のための定数を `rules.ts` に混ぜない)
 - `src/anticheat/**`、`src/keyboard/**`、`src/native/**`、`src/data/**`、`src/probe/**`、`src/debug/**`
 - `src/screens/**`(結果画面・タイトル画面にリンクを置かない)
 - `src/style.css`(集計ページは `stats.css` で上書きする)
@@ -51,7 +52,7 @@
 ### 1. 送るデータ(`src/stats/payload.ts`)
 
 ```ts
-import type { PlayMode } from "../storage";
+import type { PlayMode } from "../game/mode";
 import type { EnduranceEnd } from "../game/endurance";
 
 export type TimeAttackPayload = {
@@ -84,7 +85,7 @@ export type ValidateResult = { ok: true; payload: ResultPayload } | { ok: false;
 export function validatePayload(body: unknown, todayKey: string): ValidateResult;
 ```
 
-`src/storage.ts` の `PlayMode` は型だけを import する(`import type`)。`src/stats/` から localStorage に触れるコードを読み込まないため。
+`PlayMode` は `src/game/mode.ts` から import する。`src/storage.ts` からは型だけでも import しない。`import type` でも `functions/` の型チェックの対象に `storage.ts` が入り、Workers の型には `localStorage` がないため `Cannot find name` で落ちる(実装中に判明)。`functions/` 側に `localStorage` の型宣言を足したり、`lib` に `DOM` を足したりして回避しない。
 
 #### チェックの内容
 
@@ -396,7 +397,7 @@ type StatsResponse = {
 
 ## 想定される落とし穴
 
-- **`src/stats/` は Workers の上でも動く。** DOM・localStorage・`import.meta.env` を使わない。`src/storage.ts` からは型だけを import する(`import type`)。値を import すると `functions/` のビルドに localStorage のコードが入る
+- **`src/stats/` は Workers の上でも動く。** DOM・localStorage・`import.meta.env` を使わない。`src/storage.ts` など、ブラウザ側のファイルからは型も含めて import しない(上の「1. 送るデータ」のとおり)
 - **`src/game/endurance.ts` は約 180KB の JSON を読み込む。** `functions/` に含まれても Pages Functions のサイズ上限には収まる。気にして別の形に分けない
 - **`wrangler.toml` を作らない。** 上の「準備」のとおり、ダッシュボードの設定が効かなくなる
 - **`npm run dev` では `/api/*` が動かない。** Vite は `functions/` を実行しない。集計ページの見た目を確かめたいときに API を真似するコードを本番のコードに入れない(確かめはデプロイ後に行う)

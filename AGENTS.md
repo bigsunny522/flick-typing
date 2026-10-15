@@ -59,6 +59,6 @@ npm.cmd run format:check
 - 整形は `npm.cmd run format`(Prettier)でそろえる。コードは人が読む前提で書く。インデントは2スペース、1行に1文、1行はおおむね100文字以内。複数の文を1行に詰めたり、圧縮したような書き方をしたりしない
 - テストは1つの `it` で1つの振る舞いを確かめる。仕様書に表があるときは、表の1行ごとにテストを書く
 - `src/game/` と `src/anticheat/` では DOM・`Date.now()`・`Math.random()` を使わない(サーバー側で同じコードを使って入力ログを再計算するため)。例外はブラウザから値を集める `src/anticheat/env.ts` の `collectEnv` だけ
-- `src/stats/` では上に加えて localStorage・`import.meta.env` も使わない(Cloudflare Workers の上で動かすため)。`src/storage.ts` などブラウザ側のファイルからは型だけを import する
+- `src/stats/` では上に加えて localStorage・`import.meta.env` も使わない(Cloudflare Workers の上で動かすため)。`src/storage.ts` などブラウザ側のファイルからは型も含めて import しない(`PlayMode` は `src/game/mode.ts` にある)
 - `wrangler.toml` を置かない(D1 のバインディングは Cloudflare のダッシュボードで設定している。置くとそちらが効かなくなる)
 - 入力は自前のフリックキーボード UI と、標準キーボードのモードの `src/native/field.ts` からだけ受け付ける。それ以外の場所で OS の IME・`<input>`/`<textarea>`・`keydown` を入力経路にしない(例外は開発用の `src/probe/`)
