@@ -1,6 +1,7 @@
 import "./style.css";
 import { collectEnv, checkEnv } from "./anticheat/env";
 import { choosePrompts, PROMPTS } from "./game/prompts";
+import { ENDURANCE_RULES_VERSION, RULES_VERSION } from "./game/rules";
 import { createSession } from "./game/session";
 import { PASSAGES, passageFor } from "./game/endurance";
 import { isPerfectRun } from "./game/perfect";
@@ -17,11 +18,14 @@ import {
   loadBest,
   loadEnduranceBest,
   loadMode,
+  loadPlayerId,
   loadTheme,
   saveBest,
   saveEnduranceBest,
   type PlayMode,
 } from "./storage";
+import { reportResult } from "./report";
+import { jstDateKey, totalReading } from "./stats/summary";
 import { applyTheme, parseTheme } from "./theme";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -36,15 +40,10 @@ function createSeed(): number {
   return values[0];
 }
 
-/** 日本時間の日付キー("2026-10-15" のような形)を作る */
-function todayKey(): string {
-  return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-}
-
 function showTitle(): void {
   const verdict = checkEnv(collectEnv());
   if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
-  const dateKey = todayKey();
+  const dateKey = jstDateKey(Date.now());
   const passage = passageFor(dateKey, PASSAGES);
   renderTitle(
     root,
@@ -85,6 +84,19 @@ function startGame(mode: PlayMode): void {
           cps,
           date: new Date().toISOString(),
         });
+      reportResult(
+        {
+          kind: "timeattack",
+          playerId: loadPlayerId(),
+          mode,
+          rulesVersion: RULES_VERSION,
+          correct: final.correct,
+          miss: final.miss,
+          maxCombo: final.maxCombo,
+          durationMs: final.endTimeMs,
+        },
+        debug,
+      );
       const result = {
         correct: final.correct,
         miss: final.miss,
@@ -111,7 +123,7 @@ function startGame(mode: PlayMode): void {
 }
 
 function startEndurance(mode: PlayMode): void {
-  startEnduranceRound(mode, todayKey());
+  startEnduranceRound(mode, jstDateKey(Date.now()));
 }
 
 function startEnduranceRound(mode: PlayMode, dateKey: string): void {
@@ -134,10 +146,21 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
           date: new Date().toISOString(),
         });
       }
-      const totalReading = passage.prompts.reduce(
-        (sum, prompt) => sum + [...prompt.reading].length,
-        0,
+      reportResult(
+        {
+          kind: "endurance",
+          playerId: loadPlayerId(),
+          mode,
+          rulesVersion: ENDURANCE_RULES_VERSION,
+          dateKey,
+          passageId: passage.id,
+          correct: final.correct,
+          end: final.end ?? "complete",
+          endMs: final.endMs ?? 0,
+        },
+        debug,
       );
+      const total = totalReading(passage);
       const values = {
         correct: final.correct,
         end: final.end ?? "complete",
@@ -145,7 +168,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
         title: passage.title,
         author: passage.author,
         cardUrl: passage.cardUrl,
-        progress: Math.floor((final.correct / totalReading) * 100),
+        progress: Math.floor((final.correct / total) * 100),
         bestUpdated,
         mode,
       };

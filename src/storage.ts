@@ -1,4 +1,6 @@
-export type PlayMode = "flick" | "native";
+import type { PlayMode } from "./game/mode";
+
+export type { PlayMode };
 export type Best = { correct: number; accuracy: number; cps: number; date: string };
 export type EnduranceBest = { dateKey: string; passageId: string; correct: number; date: string };
 const BEST_KEYS: Record<PlayMode, string> = {
@@ -11,6 +13,19 @@ const ENDURANCE_BEST_KEYS: Record<PlayMode, string> = {
 };
 const MODE_KEY = "flick-typing:mode:v1";
 const THEME_KEY = "flick-typing:theme:v1";
+const PLAYER_KEY = "flick-typing:player:v1";
+const PLAYER_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+let cachedPlayerId: string | null = null;
+
+/** crypto.randomUUID は https か localhost でしかないので、無い環境では getRandomValues から作る */
+function createPlayerId(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 export function loadBest(mode: PlayMode): Best | null {
   try {
     const v = localStorage.getItem(BEST_KEYS[mode]);
@@ -70,5 +85,22 @@ export function saveTheme(theme: string) {
     localStorage.setItem(THEME_KEY, theme);
   } catch {
     /* storage is optional */
+  }
+}
+export function loadPlayerId(): string {
+  if (cachedPlayerId) return cachedPlayerId;
+  try {
+    const saved = localStorage.getItem(PLAYER_KEY);
+    if (saved && PLAYER_PATTERN.test(saved)) {
+      cachedPlayerId = saved;
+      return saved;
+    }
+    const created = createPlayerId();
+    localStorage.setItem(PLAYER_KEY, created);
+    cachedPlayerId = created;
+    return created;
+  } catch {
+    cachedPlayerId = createPlayerId();
+    return cachedPlayerId;
   }
 }

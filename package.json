@@ -8,8 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
-    "format": "prettier --write index.html src tests",
-    "format:check": "prettier --check index.html src tests"
+    "typecheck:worker": "tsc -p worker --noEmit",
+    "format": "prettier --write index.html src tests worker stats.html vite.config.ts",
+    "format:check": "prettier --check index.html src tests worker stats.html vite.config.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261015.1",
