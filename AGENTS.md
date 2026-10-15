@@ -19,6 +19,10 @@ src/game/        判定・ゲーム進行・お題(DOM に触れない純粋な�
 src/anticheat/   環境チェック・挙動分析・入力ログ(DOM に触れない純粋な関数)
 src/native/      標準キーボードのモードの隠した入力欄(DOM)
 src/data/        お題の JSON
+src/stats/       結果の送信データのチェック・集計(DOM に触れない純粋な関数。Pages Functions でも使う)
+src/stats-page/  集計ページ(/stats)の描画
+functions/       Cloudflare Pages Functions(/api/*)
+migrations/      D1 のテーブル定義
 tests/           Vitest
 ```
 
@@ -45,6 +49,8 @@ npm.cmd run build
 npm.cmd run format:check
 ```
 
+`functions/` を触ったとき(`docs/spec-result-stats.md` の実装以降)は、`npm.cmd run typecheck:functions` も通すこと。
+
 ## 守ること
 
 - コミット・push・デプロイはしない(レビュー後に Claude Code が行う)
@@ -53,4 +59,6 @@ npm.cmd run format:check
 - 整形は `npm.cmd run format`(Prettier)でそろえる。コードは人が読む前提で書く。インデントは2スペース、1行に1文、1行はおおむね100文字以内。複数の文を1行に詰めたり、圧縮したような書き方をしたりしない
 - テストは1つの `it` で1つの振る舞いを確かめる。仕様書に表があるときは、表の1行ごとにテストを書く
 - `src/game/` と `src/anticheat/` では DOM・`Date.now()`・`Math.random()` を使わない(サーバー側で同じコードを使って入力ログを再計算するため)。例外はブラウザから値を集める `src/anticheat/env.ts` の `collectEnv` だけ
+- `src/stats/` では上に加えて localStorage・`import.meta.env` も使わない(Cloudflare Workers の上で動かすため)。`src/storage.ts` などブラウザ側のファイルからは型だけを import する
+- `wrangler.toml` を置かない(D1 のバインディングは Cloudflare のダッシュボードで設定している。置くとそちらが効かなくなる)
 - 入力は自前のフリックキーボード UI と、標準キーボードのモードの `src/native/field.ts` からだけ受け付ける。それ以外の場所で OS の IME・`<input>`/`<textarea>`・`keydown` を入力経路にしない(例外は開発用の `src/probe/`)
