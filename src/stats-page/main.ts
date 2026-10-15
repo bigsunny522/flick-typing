@@ -11,6 +11,7 @@ import {
   type StatsResponse,
 } from "../stats/summary";
 import { applyTheme, parseTheme } from "../theme";
+import { axisTicks } from "./chart";
 
 const MODE_ORDER: PlayMode[] = ["flick", "native"];
 const MODE_LABEL: Record<PlayMode, string> = {
@@ -23,6 +24,7 @@ type Chart = {
   bins: Bin[];
   mine: number | null;
   label: (bin: Bin) => string;
+  tick: (value: number) => string;
 };
 
 async function loadStats(): Promise<StatsResponse> {
@@ -86,10 +88,11 @@ function timeattackHtml(stats: StatsResponse, mode: PlayMode): string {
     summary.players === 0
       ? emptyHtml()
       : chartHtml({
-          title: "正解数",
+          title: "正解数(文字)",
           bins: histogram(corrects, 10),
           mine: correct,
           label: (bin) => `${bin.from}〜${bin.to}`,
+          tick: (value) => String(value),
         }) +
         chartHtml({
           title: "正確率",
@@ -100,15 +103,17 @@ function timeattackHtml(stats: StatsResponse, mode: PlayMode): string {
           ),
           mine: best?.accuracy ?? null,
           label: percentLabel,
+          tick: percentTick,
         }) +
         chartHtml({
-          title: "打鍵速度",
+          title: "打鍵速度(文字/秒)",
           bins: histogram(
             summary.bests.map((row) => row.cps),
             0.5,
           ),
           mine: best?.cps ?? null,
           label: (bin) => `${bin.from}〜${bin.to}文字/秒`,
+          tick: (value) => String(value),
         });
   return sectionHtml(
     "タイムアタック",
@@ -139,6 +144,7 @@ function enduranceHtml(stats: StatsResponse, mode: PlayMode): string {
           ),
           mine: correct === null ? null : correct / total,
           label: percentLabel,
+          tick: percentTick,
         });
   return sectionHtml(title, summary, bestLineHtml("あなたの今日の記録", correct), top, charts);
 }
@@ -172,22 +178,45 @@ function emptyHtml(): string {
 }
 
 function chartHtml(chart: Chart): string {
+  const binCount = chart.bins.length;
   const maxCount = Math.max(1, ...chart.bins.map((bin) => bin.count));
   const mineIndex = chart.mine === null ? -1 : binIndexOf(chart.bins, chart.mine);
-  const rows = chart.bins
+  const showCounts = binCount <= 12;
+  const maxNote = showCounts ? "" : `<span class="stats-max">最大 ${maxCount}人</span>`;
+  const bars = chart.bins
     .map((bin, index) => {
-      const width = Math.round((bin.count / maxCount) * 100);
+      const height = Math.round((bin.count / maxCount) * 100);
       const mineClass = index === mineIndex ? " stats-bar-mine" : "";
+      const count =
+        showCounts && bin.count >= 1 ? `<span class="stats-value">${bin.count}</span>` : "";
+      const mine = index === mineIndex ? '<span class="stats-you">あなた</span>' : "";
       return (
-        `<div class="stats-row">` +
-        `<span class="stats-bin">${chart.label(bin)}</span>` +
-        `<span class="stats-track"><span class="stats-bar${mineClass}" style="width: ${width}%"></span></span>` +
-        `<span class="stats-people">${bin.count}人</span>` +
+        `<div class="stats-col" title="${chart.label(bin)} ${bin.count}人">` +
+        mine +
+        count +
+        `<span class="stats-bar${mineClass}" style="height: ${height}%"></span>` +
         `</div>`
       );
     })
     .join("");
-  return `<div class="stats-chart"><p class="stats-chart-title">${chart.title}</p>${rows}</div>`;
+  const ticks = axisTicks(binCount)
+    .map((index) => {
+      const value = index < binCount ? chart.bins[index].from : chart.bins[binCount - 1].to;
+      const left = (index / binCount) * 100;
+      const edge = index === 0 ? " stats-tick-start" : index === binCount ? " stats-tick-end" : "";
+      return `<span class="stats-tick${edge}" style="left: ${left}%">${chart.tick(value)}</span>`;
+    })
+    .join("");
+  return (
+    `<div class="stats-chart">` +
+    `<p class="stats-chart-title">${chart.title}${maxNote}</p>` +
+    `<div class="stats-plot">` +
+    `<div class="stats-bars">${bars}</div>` +
+    `<div class="stats-baseline"></div>` +
+    `<div class="stats-axis">${ticks}</div>` +
+    `</div>` +
+    `</div>`
+  );
 }
 
 /** 値が入る区間の index。summary.ts の histogram と同じ決め方にする */
@@ -200,6 +229,10 @@ function binIndexOf(bins: Bin[], value: number): number {
 
 function percentLabel(bin: Bin): string {
   return `${Math.round(bin.from * 100)}〜${Math.round(bin.to * 100)}%`;
+}
+
+function percentTick(value: number): string {
+  return `${Math.round(value * 100)}%`;
 }
 
 const app = document.querySelector<HTMLElement>("#app");

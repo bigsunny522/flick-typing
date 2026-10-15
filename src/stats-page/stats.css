@@ -63,34 +63,53 @@ html.stats body {
 }
 
 .stats-chart-title {
+  display: flex;
+  justify-content: space-between;
   margin: 0 0 6px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
 }
 
-.stats-row {
-  display: grid;
-  grid-template-columns: 7em 1fr 3.5em;
-  gap: 8px;
+.stats-max {
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.stats-plot {
+  margin-top: 28px;
+}
+
+.stats-bars {
+  display: flex;
+  gap: 2px;
+  height: 120px;
+}
+
+.stats-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 4px;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
-.stats-bin {
-  color: var(--subtle);
-  font-size: 11px;
+.stats-value {
+  color: var(--muted);
+  font-size: 10px;
 }
 
-.stats-track {
-  display: block;
-  height: 14px;
-  background: var(--primary-tint);
+.stats-you {
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .stats-bar {
-  display: block;
-  height: 100%;
+  flex-shrink: 0;
+  width: 100%;
   background: var(--primary);
 }
 
@@ -98,10 +117,31 @@ html.stats body {
   background: var(--primary-strong);
 }
 
-.stats-people {
-  color: var(--muted);
-  font-size: 12px;
-  text-align: right;
+.stats-baseline {
+  height: 1px;
+  background: var(--line);
+}
+
+.stats-axis {
+  position: relative;
+  height: 16px;
+}
+
+.stats-tick {
+  position: absolute;
+  top: 2px;
+  color: var(--subtle);
+  font-size: 10px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.stats-tick-start {
+  transform: none;
+}
+
+.stats-tick-end {
+  transform: translateX(-100%);
 }
 
 .stats-back {
