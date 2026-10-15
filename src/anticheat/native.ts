@@ -6,12 +6,19 @@ export type NativeEditLog = NativeEdit & {
   trusted: boolean; // input イベントの isTrusted
   viewportRatio: number; // そのときの visualViewport.height / innerHeight
 };
-export type NativeKeyLog = { t: number; code: string; trusted: boolean }; // keydown
+export type NativeKeyLog = {
+  t: number;
+  code: string;
+  trusted: boolean;
+  viewportRatio: number; // そのときの visualViewport.height / innerHeight
+}; // keydown
 
 export function analyzeNative(edits: NativeEditLog[], keys: NativeKeyLog[]): BehaviorVerdict {
   const metrics: Record<string, number> = {};
   const reasons: string[] = [];
-  const physicalKeys = keys.filter((key) => key.code !== "").length;
+  const physicalKeys = keys.filter(
+    (key) => key.code !== "" && key.viewportRatio > thresholds.NATIVE_SOFT_KB_RATIO,
+  ).length;
   const recent = edits.slice(-thresholds.WINDOW);
   const intervals = recent.slice(1).map((edit, index) => edit.t - recent[index].t);
   const ordered = [...intervals].sort((left, right) => left - right);

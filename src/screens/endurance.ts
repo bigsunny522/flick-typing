@@ -238,7 +238,15 @@ export function renderEndurance(
   };
   const onKey = (key: { code: string; timeStamp: number; trusted: boolean }) => {
     if (!active) return;
-    keys = [...keys, { t: key.timeStamp - startedAt, code: key.code, trusted: key.trusted }];
+    keys = [
+      ...keys,
+      {
+        t: key.timeStamp - startedAt,
+        code: key.code,
+        trusted: key.trusted,
+        viewportRatio: lastViewport.ratio,
+      },
+    ];
   };
   const onKeyboardChange = (shown: boolean) => {
     reopenOverlay?.classList.toggle("is-open", !shown);

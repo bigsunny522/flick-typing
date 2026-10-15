@@ -16,6 +16,16 @@ function makeEdits(
   }));
 }
 
+function makeKeys(count: number, patch: Partial<NativeKeyLog> = {}): NativeKeyLog[] {
+  return Array.from({ length: count }, (_, index) => ({
+    t: index * 120,
+    code: "KeyA",
+    trusted: true,
+    viewportRatio: 0.45,
+    ...patch,
+  }));
+}
+
 describe("native behavior", () => {
   it("flags an untrusted event", () => {
     const edits = makeEdits(1, () => ({ trusted: false }));
@@ -26,6 +36,7 @@ describe("native behavior", () => {
       t: index * 120,
       code: "KeyA",
       trusted: true,
+      viewportRatio: 1,
     }));
     const verdict = analyzeNative(makeEdits(3), keys);
     expect(verdict.reasons).toEqual(["physical-key"]);
@@ -62,9 +73,44 @@ describe("native behavior", () => {
         viewportRatio: 0.45,
       };
     });
-    const keys: NativeKeyLog[] = edits.map((edit) => ({ t: edit.t, code: "", trusted: true }));
+    const keys: NativeKeyLog[] = edits.map((edit) => ({
+      t: edit.t,
+      code: "",
+      trusted: true,
+      viewportRatio: 0.45,
+    }));
     const verdict = analyzeNative(edits, keys);
     expect(verdict.bot).toBe(false);
     expect(verdict.reasons).toEqual([]);
+  });
+  it("counts no physical keys while the soft keyboard is open", () => {
+    const keys = makeKeys(3, { code: "KeyA", viewportRatio: 0.45 });
+    const verdict = analyzeNative(makeEdits(3), keys);
+    expect(verdict.reasons).toEqual([]);
+    expect(verdict.metrics.physicalKeys).toBe(0);
+  });
+  it("counts no physical keys when the ratio equals the threshold", () => {
+    const keys = makeKeys(3, { code: "KeyA", viewportRatio: 0.85 });
+    const verdict = analyzeNative(makeEdits(3), keys);
+    expect(verdict.reasons).toEqual([]);
+    expect(verdict.metrics.physicalKeys).toBe(0);
+  });
+  it("counts physical keys while the soft keyboard is closed", () => {
+    const keys = makeKeys(3, { code: "KeyA", viewportRatio: 0.9 });
+    const verdict = analyzeNative(makeEdits(3), keys);
+    expect(verdict.reasons).toEqual(["physical-key"]);
+    expect(verdict.metrics.physicalKeys).toBe(3);
+  });
+  it("counts no physical keys without a code", () => {
+    const keys = makeKeys(3, { code: "", viewportRatio: 1 });
+    const verdict = analyzeNative(makeEdits(3), keys);
+    expect(verdict.reasons).toEqual([]);
+    expect(verdict.metrics.physicalKeys).toBe(0);
+  });
+  it("flags an untrusted key regardless of the ratio", () => {
+    const keys = makeKeys(3, { code: "KeyA", viewportRatio: 0.45, trusted: false });
+    const verdict = analyzeNative(makeEdits(3), keys);
+    expect(verdict.reasons).toEqual(["untrusted"]);
+    expect(verdict.metrics.physicalKeys).toBe(0);
   });
 });
