@@ -4,9 +4,9 @@
 
 ランキングや、結果に応じたランク(段位)を作りたい。ただ、基準を決めるための材料がない。今は結果を端末の localStorage に自己ベストとして残すだけで、ほかの人がどのくらいの記録を出しているのか分からない。
 
-ゲームは Cloudflare Pages(GitHub 連携の自動デプロイ)で公開していて、友達に遊んでもらっている。そこで次の2つを作る。
+ゲームは Cloudflare Workers の静的アセット(GitHub 連携の Workers Builds。ビルドは `npm run build`、デプロイは `npx wrangler deploy`、Worker 名は `flick-typing`)で公開していて、友達に遊んでもらっている。そこで次の2つを作る。
 
-1. プレイを終えるたびに、**結果の数値だけ**を匿名でサーバー(Pages Functions + D1)に送って保存する
+1. プレイを終えるたびに、**結果の数値だけ**を匿名でサーバー(Worker + D1)に送って保存する
 2. 集めた記録の分布を、誰でも見られる集計ページ `/stats` に出す
 
 オーナーと決めたこと:
@@ -30,12 +30,14 @@
 - `src/stats-page/main.ts`(新規) — 集計ページの描画
 - `src/stats-page/stats.css`(新規) — 集計ページのスタイル
 - `vite.config.ts`(新規) — `stats.html` もビルドに含める
-- `functions/api/results.ts`(新規) — `POST /api/results`
-- `functions/api/stats.ts`(新規) — `GET /api/stats`
-- `functions/tsconfig.json`(新規) — `functions/` の型チェック用
+- `worker/index.ts`(新規) — Worker の入口。`/api/*` を振り分け、それ以外は静的アセットを返す
+- `worker/results.ts`(新規) — `POST /api/results`
+- `worker/stats.ts`(新規) — `GET /api/stats`
+- `worker/tsconfig.json`(新規) — `worker/` の型チェック用
 - `migrations/0001_results.sql`(新規) — D1 のテーブル
+- `functions/`(2回目で作ったもの) — 消す。中身は `worker/` に移す(下の「6. API」)
 - `tests/stats-payload.test.ts`・`tests/stats-summary.test.ts`(新規)
-- `package.json` — `format` / `format:check` の対象に `stats.html functions` を足す。`typecheck:functions` スクリプトを足す
+- `package.json` — `format` / `format:check` の対象に `stats.html worker` を足す。`typecheck:worker` スクリプトを足す
 
 触らないファイル:
 
@@ -85,7 +87,7 @@ export type ValidateResult = { ok: true; payload: ResultPayload } | { ok: false;
 export function validatePayload(body: unknown, todayKey: string): ValidateResult;
 ```
 
-`PlayMode` は `src/game/mode.ts` から import する。`src/storage.ts` からは型だけでも import しない。`import type` でも `functions/` の型チェックの対象に `storage.ts` が入り、Workers の型には `localStorage` がないため `Cannot find name` で落ちる(実装中に判明)。`functions/` 側に `localStorage` の型宣言を足したり、`lib` に `DOM` を足したりして回避しない。
+`PlayMode` は `src/game/mode.ts` から import する。`src/storage.ts` からは型だけでも import しない。`import type` でも `worker/` の型チェックの対象に `storage.ts` が入り、Workers の型には `localStorage` がないため `Cannot find name` で落ちる(実装中に判明)。`worker/` 側に `localStorage` の型宣言を足したり、`lib` に `DOM` を足したりして回避しない。
 
 #### チェックの内容
 
@@ -219,17 +221,30 @@ CREATE INDEX IF NOT EXISTS results_endurance_day ON results (kind, date_key, mod
 
 使わない列には `NULL` を入れる(タイムアタックの `date_key` など)。
 
-### 6. API(`functions/api/*.ts`)
+### 6. API(`worker/*.ts`)
 
-Pages Functions の書き方(`export const onRequestPost: PagesFunction<Env>` など)で書く。D1 のバインディング名は `DB`。
+**当初は Pages Functions(`functions/`)で書く予定だったが、公開先が Pages ではなく Workers だったため変更した。** Workers では `functions/` は動かない。設定は Claude Code が置いた `wrangler.jsonc`(`main: worker/index.ts`、`assets.directory: ./dist`、`assets.binding: ASSETS`、`run_worker_first: ["/api/*"]`、D1 のバインディング `DB`)を使う。`wrangler.jsonc` は実装担当は変えない。
+
+`worker/index.ts` は `export default { fetch(request, env) { ... } } satisfies ExportedHandler<Env>` の形にし、次のように振り分ける。
+
+| パス                       | メソッド | 処理                                               |
+| -------------------------- | -------- | -------------------------------------------------- |
+| `/api/results`             | `POST`   | `handleResults(request, env)`(`worker/results.ts`) |
+| `/api/results`             | それ以外 | `405`                                              |
+| `/api/stats`               | `GET`    | `handleStats(env)`(`worker/stats.ts`)              |
+| `/api/stats`               | それ以外 | `405`                                              |
+| `/api/` で始まるほかのパス | すべて   | `404`                                              |
+| それ以外                   | すべて   | `env.ASSETS.fetch(request)`                        |
+
+D1 のバインディング名は `DB`。`Env` は `worker/env.ts` などに置かず、`worker/index.ts` で定義して export する。
 
 ```ts
-type Env = { DB: D1Database };
+export type Env = { DB: D1Database; ASSETS: Fetcher };
 ```
 
-判定と集計は `src/stats/` の関数を呼ぶだけにし、`functions/` 側には SQL と HTTP の受け渡しだけを書く。
+判定と集計は `src/stats/` の関数を呼ぶだけにし、`worker/` 側には SQL と HTTP の受け渡しだけを書く。
 
-#### `POST /api/results`(`functions/api/results.ts`)
+#### `POST /api/results`(`worker/results.ts`)
 
 1. 本文が 2048 バイトを超えたら `413`
 2. JSON として読めなければ `400`
@@ -237,9 +252,9 @@ type Env = { DB: D1Database };
 4. `ok: true` なら1行 `INSERT` して `204`。SQL は `prepare(...).bind(...)` で値を渡す(文字列をつなげて SQL を作らない)
 5. D1 がエラーを返したら `500`(本文に詳細を出さない)
 
-`POST` 以外は Pages Functions の既定どおり `405` になる(`onRequestPost` だけを export する)。
+`POST` 以外の `405` は `worker/index.ts` で返す。
 
-#### `GET /api/stats`(`functions/api/stats.ts`)
+#### `GET /api/stats`(`worker/stats.ts`)
 
 返す形:
 
@@ -271,7 +286,7 @@ type StatsResponse = {
 
 ### 7. 集計ページ(`stats.html`・`src/stats-page/`)
 
-`/stats` で開く(Cloudflare Pages は `stats.html` を `/stats` で配信する)。`index.html` と同じフォントの読み込みと viewport の指定をし、`<html lang="ja" class="stats">`、`<title>みんなの記録 | ふりっくタイピング</title>` にする。
+`/stats` で開く(Workers の静的アセットは既定の `html_handling: "auto-trailing-slash"` で `stats.html` を `/stats` で配信する)。`index.html` と同じフォントの読み込みと viewport の指定をし、`<html lang="ja" class="stats">`、`<title>みんなの記録 | ふりっくタイピング</title>` にする。
 
 `src/stats-page/main.ts` は `../style.css` と `./stats.css` を読み込み、`applyTheme(parseTheme(loadTheme()))` でゲームと同じ色にする。`stats.css` では `html.stats` の下で `touch-action` と `user-select` を元に戻し、縦にスクロールできるようにする。
 
@@ -325,12 +340,12 @@ type StatsResponse = {
 
 `index.html` と `stats.html` の両方を入口にする(Vite の複数ページ構成。`build.rollupOptions.input`、Vite 8 で名前が変わっていれば新しい名前を使う)。`npm run build` のあと `dist/index.html` と `dist/stats.html` の両方ができること。
 
-### 9. `functions/` の型チェック
+### 9. `worker/` の型チェック
 
-- `functions/tsconfig.json` は、ルートの `tsconfig.json` と同じ厳しさ(`strict` など)で、`"types": ["@cloudflare/workers-types"]`、`"lib": ["ES2022"]`、`"include": ["."]` にする
-- `package.json` に `"typecheck:functions": "tsc -p functions --noEmit"` を足す
-- `functions/` から `src/stats/`・`src/game/` を相対パスで import する。`src/game/endurance.ts` の JSON の import がこの tsconfig でも通るよう `resolveJsonModule` を付ける
-- `functions/` から import してよいのは `src/stats/**` と `src/game/**` だけ(DOM や localStorage に触れるファイルを読み込まない)
+- `worker/tsconfig.json` は、ルートの `tsconfig.json` と同じ厳しさ(`strict` など)で、`"types": ["@cloudflare/workers-types"]`、`"lib": ["ES2022"]`、`"include": ["."]` にする
+- `package.json` に `"typecheck:worker": "tsc -p worker --noEmit"` を足す
+- `worker/` から `src/stats/`・`src/game/` を相対パスで import する。`src/game/endurance.ts` の JSON の import がこの tsconfig でも通るよう `resolveJsonModule` を付ける
+- `worker/` から import してよいのは `src/stats/**` と `src/game/**` だけ(DOM や localStorage に触れるファイルを読み込まない)
 
 ### 10. テスト
 
@@ -358,7 +373,7 @@ type StatsResponse = {
 ## 受け入れ条件
 
 - [ ] `npx tsc --noEmit` が通る
-- [ ] `npm run typecheck:functions` が通る
+- [ ] `npm run typecheck:worker` が通る
 - [ ] `npm test` が通る(上の「テスト」の項目がすべてある)
 - [ ] `npm run build` が通り、`dist/index.html` と `dist/stats.html` の両方ができる
 - [ ] `npm run format:check` が通る
@@ -378,10 +393,7 @@ type StatsResponse = {
 
 1. Cloudflare のダッシュボード → Storage & Databases → D1 → Create で、データベースを作る(名前は `flick-typing`)
 2. 作ったデータベースの Console で、`migrations/0001_results.sql` の中身を貼り付けて実行する
-3. Workers & Pages → このゲームの Pages プロジェクト → Settings → Bindings → Add → D1 database で、変数名 `DB`、データベース `flick-typing` を選ぶ。Production と Preview の両方に設定する
-4. 設定のあとにデプロイし直す(バインディングは次のデプロイから効く)
-
-`wrangler.toml` は置かない。置くとダッシュボードのバインディング設定より優先され、手順 3 が効かなくなるため。
+3. バインディングはダッシュボードでは設定しない。`wrangler.jsonc` に書いてあり、デプロイのたびにそちらで上書きされる(ID `3ad7a4e4-2c47-4a55-bc55-b05a5b46458c` は 2026-10-16 にオーナーから受け取った)
 
 生データを見たいときは、D1 の Console で SQL を実行する(例:`SELECT * FROM results ORDER BY id DESC LIMIT 50`)。
 
@@ -399,10 +411,11 @@ type StatsResponse = {
 ## 想定される落とし穴
 
 - **`src/stats/` は Workers の上でも動く。** DOM・localStorage・`import.meta.env` を使わない。`src/storage.ts` など、ブラウザ側のファイルからは型も含めて import しない(上の「1. 送るデータ」のとおり)
-- **`src/game/endurance.ts` は約 180KB の JSON を読み込む。** `functions/` に含まれても Pages Functions のサイズ上限には収まる。気にして別の形に分けない
-- **`wrangler.toml` を作らない。** 上の「準備」のとおり、ダッシュボードの設定が効かなくなる
-- **`npm run dev` では `/api/*` が動かない。** Vite は `functions/` を実行しない。集計ページの見た目を確かめたいときに API を真似するコードを本番のコードに入れない(確かめはデプロイ後に行う)
-- **ルート `tsconfig.json` の `include` に `functions` を足さない。** ルートは DOM の型、`functions/` は Workers の型で、混ぜると型がぶつかる。だから型チェックを2つに分けている
+- **`src/game/endurance.ts` は約 180KB の JSON を読み込む。** `worker/` に含まれても Workers のサイズ上限には収まる。気にして別の形に分けない
+- **`wrangler.jsonc` は Claude Code が管理する。** 実装担当は変えない。Worker 名を変えると別の Worker ができる
+- **`wrangler` は依存に入れていない。** デプロイは Workers Builds が `npx wrangler deploy` で行う。ローカルで `wrangler dev` を動かす確認は今回の完了条件に入れない
+- **`npm run dev` では `/api/*` が動かない。** Vite は `worker/` を実行しない。集計ページの見た目を確かめたいときに API を真似するコードを本番のコードに入れない(確かめはデプロイ後に行う)
+- **ルート `tsconfig.json` の `include` に `worker` を足さない。** ルートは DOM の型、`worker/` は Workers の型で、混ぜると型がぶつかる。だから型チェックを2つに分けている
 - **`style.css` の `html, body { touch-action: none; user-select: none }`** のせいで、そのままでは集計ページをスクロールできない。`stats.css` の `html.stats` で上書きする。`style.css` 自体は変えない
 - **`keepalive: true` の本文は 64KB まで。** 今回のデータは数百バイトなので問題ない
 - **耐久の `final.endMs` と `final.end` は型の上では `null` になりうる。** 終わった後は値が入っているはずだが、`main.ts` の今の書き方(`?? "complete"`)に合わせて `?? 0` で埋める

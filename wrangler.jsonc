@@ -1,0 +1,19 @@
+{
+  // Cloudflare Workers Builds が GitHub から `npm run build` → `npx wrangler deploy` で使う設定。
+  // 名前はダッシュボードの Worker 名と同じにする(違うと別の Worker ができる)。
+  "name": "flick-typing",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flick-typing",
+      "database_id": "3ad7a4e4-2c47-4a55-bc55-b05a5b46458c",
+    },
+  ],
+}

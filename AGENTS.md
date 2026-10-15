@@ -7,7 +7,7 @@
 ## プロジェクト
 
 - 絶対パス: `G:\myApp\flick_typing`
-- スタック: Vite + TypeScript(フレームワークなし)、テストは Vitest。配信は Cloudflare Pages を予定
+- スタック: Vite + TypeScript(フレームワークなし)、テストは Vitest。配信は Cloudflare Workers(静的アセット + `worker/`、GitHub 連携の Workers Builds)
 
 ## 構成
 
@@ -19,9 +19,9 @@ src/game/        判定・ゲーム進行・お題(DOM に触れない純粋な�
 src/anticheat/   環境チェック・挙動分析・入力ログ(DOM に触れない純粋な関数)
 src/native/      標準キーボードのモードの隠した入力欄(DOM)
 src/data/        お題の JSON
-src/stats/       結果の送信データのチェック・集計(DOM に触れない純粋な関数。Pages Functions でも使う)
+src/stats/       結果の送信データのチェック・集計(DOM に触れない純粋な関数。Worker でも使う)
 src/stats-page/  集計ページ(/stats)の描画
-functions/       Cloudflare Pages Functions(/api/*)
+worker/          Cloudflare Worker の入口(/api/* を処理し、ほかは dist の静的アセットを返す)
 migrations/      D1 のテーブル定義
 tests/           Vitest
 ```
@@ -49,7 +49,7 @@ npm.cmd run build
 npm.cmd run format:check
 ```
 
-`functions/` を触ったとき(`docs/spec-result-stats.md` の実装以降)は、`npm.cmd run typecheck:functions` も通すこと。
+`worker/` を触ったとき(`docs/spec-result-stats.md` の実装以降)は、`npm.cmd run typecheck:worker` も通すこと。
 
 ## 守ること
 
@@ -60,5 +60,5 @@ npm.cmd run format:check
 - テストは1つの `it` で1つの振る舞いを確かめる。仕様書に表があるときは、表の1行ごとにテストを書く
 - `src/game/` と `src/anticheat/` では DOM・`Date.now()`・`Math.random()` を使わない(サーバー側で同じコードを使って入力ログを再計算するため)。例外はブラウザから値を集める `src/anticheat/env.ts` の `collectEnv` だけ
 - `src/stats/` では上に加えて localStorage・`import.meta.env` も使わない(Cloudflare Workers の上で動かすため)。`src/storage.ts` などブラウザ側のファイルからは型も含めて import しない(`PlayMode` は `src/game/mode.ts` にある)
-- `wrangler.toml` を置かない(D1 のバインディングは Cloudflare のダッシュボードで設定している。置くとそちらが効かなくなる)
+- `wrangler.jsonc` は変えない(Claude Code が管理する。Worker 名・D1 のバインディングが書いてあり、GitHub からのデプロイがこれを使う)
 - 入力は自前のフリックキーボード UI と、標準キーボードのモードの `src/native/field.ts` からだけ受け付ける。それ以外の場所で OS の IME・`<input>`/`<textarea>`・`keydown` を入力経路にしない(例外は開発用の `src/probe/`)
