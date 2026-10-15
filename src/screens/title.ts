@@ -9,6 +9,12 @@ const MODE_LABEL: Record<PlayMode, string> = {
 };
 const NATIVE_HINT = "フリック入力で打ってください(トグル入力は使えません)";
 
+export type TitleEndurance = {
+  title: string;
+  author: string;
+  loadBest: (mode: PlayMode) => number | null;
+};
+
 export function renderTitle(
   host: HTMLElement,
   mode: PlayMode,
@@ -16,6 +22,8 @@ export function renderTitle(
   verdict: EnvVerdict,
   debug: boolean,
   onStart: (mode: PlayMode) => void,
+  endurance: TitleEndurance,
+  onStartEndurance: (mode: PlayMode) => void,
 ): void {
   let current = mode;
   const modeButtonsHtml = MODE_ORDER.map(
@@ -23,8 +31,10 @@ export function renderTitle(
       `<button type="button" data-mode="${item}" aria-pressed="${String(item === mode)}">${MODE_LABEL[item]}</button>`,
   ).join("");
   const best = loadBestFor(mode);
-  host.innerHTML = `<main class="screen title-screen"><div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">FLICK TYPING</p><h1>ふりっく<br />タイピング</h1><p class="intro">フリックだけで打つタイピング。<br />ミスせず続けると時間が増える。</p><p class="native-hint"${mode === "native" ? "" : " hidden"}>${NATIVE_HINT}</p><div class="best"><span>自己ベスト</span><strong><span id="best-value">${best?.correct ?? "—"}</span><small>字</small></strong></div>${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}<div class="mode-select">${modeButtonsHtml}</div><button id="start" class="primary-button">はじめる</button></main>`;
+  const enduranceBest = endurance.loadBest(mode);
+  host.innerHTML = `<main class="screen title-screen"><div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">FLICK TYPING</p><h1>ふりっく<br />タイピング</h1><p class="intro">フリックだけで打つタイピング。<br />ミスせず続けると時間が増える。</p><p class="native-hint"${mode === "native" ? "" : " hidden"}>${NATIVE_HINT}</p><div class="best"><span>自己ベスト</span><strong><span id="best-value">${best?.correct ?? "—"}</span><small>字</small></strong></div>${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}<div class="mode-select">${modeButtonsHtml}</div><button id="start" class="primary-button">はじめる</button><section class="endurance-box"><p class="endurance-box-label">今日の耐久チャレンジ</p><p class="endurance-work">${endurance.title} / ${endurance.author}</p><div class="endurance-best"><span>今日のベスト</span><strong><span id="endurance-best-value">${enduranceBest ?? "—"}</span><small>字</small></strong></div><button id="start-endurance" class="secondary-button">耐久チャレンジ</button><p class="endurance-note">1回ミスしたら終了。</p></section></main>`;
   const bestValue = host.querySelector<HTMLElement>("#best-value")!;
+  const enduranceBestValue = host.querySelector<HTMLElement>("#endurance-best-value")!;
   const hint = host.querySelector<HTMLElement>(".native-hint")!;
   const buttons = host.querySelectorAll<HTMLButtonElement>(".mode-select button");
   const select = (next: PlayMode) => {
@@ -35,6 +45,7 @@ export function renderTitle(
     );
     const nextBest = loadBestFor(next);
     bestValue.textContent = nextBest ? String(nextBest.correct) : "—";
+    enduranceBestValue.textContent = String(endurance.loadBest(next) ?? "—");
     hint.hidden = next !== "native";
   };
   buttons.forEach((button) => {
@@ -46,5 +57,8 @@ export function renderTitle(
   host
     .querySelector<HTMLButtonElement>("#start")
     ?.addEventListener("click", () => onStart(current));
+  host
+    .querySelector<HTMLButtonElement>("#start-endurance")
+    ?.addEventListener("click", () => onStartEndurance(current));
   bindThemeTap(host);
 }

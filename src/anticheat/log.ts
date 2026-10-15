@@ -1,9 +1,15 @@
 import type { Prompt } from "../game/prompts";
 import { createSession, reduce } from "../game/session";
+import {
+  createEndurance,
+  reduceEndurance,
+  type EnduranceEnd,
+  type Passage,
+} from "../game/endurance";
 import { inputForStroke, type KeyStroke } from "../keyboard/layout";
 import { inputForEdit } from "../game/native-edit";
 import type { JudgeResult } from "../game/judge";
-import { RULES_VERSION } from "../game/rules";
+import { RULES_VERSION, ENDURANCE_RULES_VERSION } from "../game/rules";
 import type { EnvSnapshot } from "./env";
 import type { NativeEditLog } from "./native";
 import type { PlayMode } from "../storage";
@@ -73,6 +79,65 @@ export function replayNative(seed: number, prompts: Prompt[], edits: NativeEditL
     mode: "native",
     rulesVersion: RULES_VERSION,
     seed,
+    env: emptyEnv(),
+    debug: false,
+  };
+}
+
+export type EnduranceLog = {
+  rulesVersion: number;
+  kind: "endurance";
+  mode: PlayMode;
+  dateKey: string;
+  passageId: string;
+  strokes: (KeyStroke & { result: JudgeResult })[]; // native のときは []
+  edits: (NativeEditLog & { result: JudgeResult })[]; // flick のときは []
+  final: { correct: number; end: EnduranceEnd; endMs: number };
+  env: EnvSnapshot;
+  debug: boolean;
+};
+
+export function replayEndurance(
+  dateKey: string,
+  passage: Passage,
+  input: { mode: "flick"; strokes: KeyStroke[] } | { mode: "native"; edits: NativeEditLog[] },
+): EnduranceLog {
+  let state = createEndurance(passage.prompts);
+  const replayedStrokes: (KeyStroke & { result: JudgeResult })[] = [];
+  const replayedEdits: (NativeEditLog & { result: JudgeResult })[] = [];
+  if (input.mode === "flick") {
+    for (const stroke of input.strokes) {
+      const judged = inputForStroke(stroke);
+      if (!judged) continue;
+      if (state.finished || stroke.up.t >= state.deadlineMs) continue;
+      state = reduceEndurance(state, { type: "stroke", t: stroke.up.t, input: judged });
+      replayedStrokes.push({ ...stroke, result: state.lastResult ?? "miss" });
+    }
+  } else {
+    for (const edit of input.edits) {
+      const judged = inputForEdit(edit);
+      if (!judged) continue;
+      if (state.finished || edit.t >= state.deadlineMs) continue;
+      state = reduceEndurance(state, { type: "stroke", t: edit.t, input: judged });
+      replayedEdits.push({ ...edit, result: state.lastResult ?? "miss" });
+    }
+  }
+  if (!state.finished) {
+    state = reduceEndurance(state, { type: "tick", t: state.deadlineMs });
+  }
+  return {
+    rulesVersion: ENDURANCE_RULES_VERSION,
+    kind: "endurance",
+    mode: input.mode,
+    dateKey,
+    passageId: passage.id,
+    strokes: replayedStrokes,
+    edits: replayedEdits,
+    final: {
+      correct: state.correct,
+      end: state.end ?? "timeout",
+      endMs: state.endMs ?? state.deadlineMs,
+    },
     env: emptyEnv(),
     debug: false,
   };

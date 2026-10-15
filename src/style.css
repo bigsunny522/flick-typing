@@ -273,6 +273,85 @@ button {
   font-size: 11px;
   font-weight: 700;
 }
+.title-screen .endurance-box {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+}
+.endurance-box-label {
+  margin: 0;
+  color: var(--primary-strong);
+  font:
+    600 11px Outfit,
+    sans-serif;
+  letter-spacing: 0.18em;
+}
+.title-screen .endurance-work {
+  margin: 6px 0 0;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+.endurance-best {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.endurance-best strong {
+  color: var(--fg);
+  font:
+    500 20px/1 Outfit,
+    sans-serif;
+  font-style: italic;
+}
+.endurance-best small {
+  margin-left: 3px;
+  font-size: 11px;
+}
+.title-screen #start-endurance {
+  height: 42px;
+  margin-top: 10px;
+}
+.endurance-note {
+  margin: 6px 0 0;
+  color: var(--subtle);
+  font-size: 10px;
+  font-weight: 700;
+}
+@media (max-height: 700px) {
+  .title-screen {
+    padding-top: 40px;
+  }
+  .title-screen h1 {
+    margin: 12px 0 10px;
+    font-size: 36px;
+  }
+  .title-screen .best {
+    margin-top: 16px;
+  }
+  .title-screen .best strong {
+    font-size: 44px;
+  }
+  .title-screen .mode-select {
+    margin-top: 16px;
+  }
+  .title-screen .endurance-box {
+    margin-top: 12px;
+    padding: 8px 12px;
+  }
+  .title-screen .endurance-work {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .title-screen #start-endurance {
+    height: 38px;
+    margin-top: 8px;
+  }
+}
 .play {
   height: 100vh;
   height: 100dvh;
@@ -629,6 +708,19 @@ button {
 .reopen-overlay.is-open {
   display: grid;
 }
+.play.endurance .prompt-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.play.endurance .endurance-title {
+  font-family: "LINE Seed JP", sans-serif;
+  letter-spacing: 0.08em;
+}
+.play.endurance .endurance-progress {
+  margin-left: auto;
+  color: var(--muted);
+}
 .result-screen {
   padding-top: 80px;
 }
@@ -701,6 +793,28 @@ button {
   display: grid;
   gap: 10px;
   margin-top: auto;
+}
+.result-screen .endurance-reason {
+  margin: 8px 0 0;
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 700;
+}
+.endurance-result .result-grid strong.endurance-work {
+  font:
+    700 13px/1.5 "LINE Seed JP",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.endurance-source {
+  margin: 10px 0 0;
+  color: var(--subtle);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+.endurance-source a {
+  color: inherit;
 }
 .blocked {
   justify-content: center;

@@ -2,14 +2,25 @@ import "./style.css";
 import { collectEnv, checkEnv } from "./anticheat/env";
 import { choosePrompts, PROMPTS } from "./game/prompts";
 import { createSession } from "./game/session";
+import { PASSAGES, passageFor } from "./game/endurance";
 import { debugEnabled } from "./debug/panel";
 import { downloadLog } from "./debug/panel";
-import { replay, replayNative } from "./anticheat/log";
+import { replay, replayEndurance, replayNative } from "./anticheat/log";
 import { renderBlocked } from "./screens/blocked";
 import { renderPlay } from "./screens/play";
 import { renderResult } from "./screens/result";
 import { renderTitle } from "./screens/title";
-import { loadBest, loadMode, loadTheme, saveBest, type PlayMode } from "./storage";
+import { renderEndurance } from "./screens/endurance";
+import { renderEnduranceResult } from "./screens/endurance-result";
+import {
+  loadBest,
+  loadEnduranceBest,
+  loadMode,
+  loadTheme,
+  saveBest,
+  saveEnduranceBest,
+  type PlayMode,
+} from "./storage";
 import { applyTheme, parseTheme } from "./theme";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -24,10 +35,30 @@ function createSeed(): number {
   return values[0];
 }
 
+/** 日本時間の日付キー("2026-10-15" のような形)を作る */
+function todayKey(): string {
+  return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+}
+
 function showTitle(): void {
   const verdict = checkEnv(collectEnv());
   if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
-  renderTitle(root, loadMode(), loadBest, verdict, debug, startGame);
+  const dateKey = todayKey();
+  const passage = passageFor(dateKey, PASSAGES);
+  renderTitle(
+    root,
+    loadMode(),
+    loadBest,
+    verdict,
+    debug,
+    startGame,
+    {
+      title: passage.title,
+      author: passage.author,
+      loadBest: (mode) => loadEnduranceBest(mode, dateKey)?.correct ?? null,
+    },
+    startEndurance,
+  );
 }
 
 function startGame(mode: PlayMode): void {
@@ -72,6 +103,61 @@ function startGame(mode: PlayMode): void {
             })
         : undefined;
       renderResult(root, result, () => startGame(mode), showTitle, save);
+    },
+  });
+}
+
+function startEndurance(mode: PlayMode): void {
+  startEnduranceRound(mode, todayKey());
+}
+
+function startEnduranceRound(mode: PlayMode, dateKey: string): void {
+  const verdict = checkEnv(collectEnv());
+  if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
+  const passage = passageFor(dateKey, PASSAGES);
+  renderEndurance(root, passage, {
+    mode,
+    debug,
+    onBlocked: () => renderBlocked(root, "automation"),
+    onFinish: (final, payload) => {
+      const previous = loadEnduranceBest(mode, dateKey);
+      const bestUpdated = !debug && (!previous || final.correct > previous.correct);
+      if (bestUpdated) {
+        saveEnduranceBest(mode, {
+          dateKey,
+          passageId: passage.id,
+          correct: final.correct,
+          date: new Date().toISOString(),
+        });
+      }
+      const totalReading = passage.prompts.reduce(
+        (sum, prompt) => sum + [...prompt.reading].length,
+        0,
+      );
+      const values = {
+        correct: final.correct,
+        end: final.end ?? "complete",
+        miss: final.miss,
+        title: passage.title,
+        author: passage.author,
+        cardUrl: passage.cardUrl,
+        progress: Math.floor((final.correct / totalReading) * 100),
+        bestUpdated,
+        mode,
+      };
+      const save = debug
+        ? () => {
+            const log = replayEndurance(dateKey, passage, payload);
+            downloadLog({ ...log, env: collectEnv(), debug });
+          }
+        : undefined;
+      renderEnduranceResult(
+        root,
+        values,
+        () => startEnduranceRound(mode, dateKey),
+        showTitle,
+        save,
+      );
     },
   });
 }
