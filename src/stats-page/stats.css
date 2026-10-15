@@ -1,4 +1,5 @@
-html.stats {
+html.stats,
+html.stats body {
   touch-action: auto;
   user-select: auto;
   overscroll-behavior: auto;
@@ -104,7 +105,7 @@ html.stats {
 }
 
 .stats-back {
-  margin: 28px 0 8px;
+  margin: 0 0 12px;
 }
 
 .stats-back a {

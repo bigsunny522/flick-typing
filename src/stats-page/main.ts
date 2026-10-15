@@ -32,7 +32,7 @@ async function loadStats(): Promise<StatsResponse> {
 }
 
 function shell(body: string): string {
-  return `<main class="screen stats-screen"><h1>みんなの記録</h1>${body}${backLink()}</main>`;
+  return `<main class="screen stats-screen">${backLink()}<h1>みんなの記録</h1>${body}</main>`;
 }
 
 function backLink(): string {
