@@ -32,7 +32,39 @@ export function renderTitle(
   ).join("");
   const best = loadBestFor(mode);
   const enduranceBest = endurance.loadBest(mode);
-  host.innerHTML = `<main class="screen title-screen"><div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">FLICK TYPING</p><h1>ふりっく<br />タイピング</h1><p class="intro">フリックだけで打つタイピング。<br />ミスせず続けると時間が増える。</p><p class="native-hint"${mode === "native" ? "" : " hidden"}>${NATIVE_HINT}</p><div class="best"><span>自己ベスト</span><strong><span id="best-value">${best?.correct ?? "—"}</span><small>字</small></strong></div>${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}<div class="mode-select">${modeButtonsHtml}</div><button id="start" class="primary-button">はじめる</button><section class="endurance-box"><p class="endurance-box-label">今日の耐久チャレンジ</p><p class="endurance-work">${endurance.title} / ${endurance.author}</p><div class="endurance-best"><span>今日のベスト</span><strong><span id="endurance-best-value">${enduranceBest ?? "—"}</span><small>字</small></strong></div><button id="start-endurance" class="secondary-button">耐久チャレンジ</button><p class="endurance-note">1回ミスしたら終了。</p></section></main>`;
+  host.innerHTML =
+    `<main class="screen title-screen">` +
+    `<div class="deco" aria-hidden="true"></div>` +
+    `<button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button>` +
+    `<p class="ribbon">FLICK TYPING</p>` +
+    `<h1>ふりっく<br />タイピング</h1>` +
+    `<p class="intro">フリックだけで打つタイピング。</p>` +
+    `${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}` +
+    `<div class="title-actions">` +
+    `<div class="mode-select">${modeButtonsHtml}</div>` +
+    `<p class="native-hint"${mode === "native" ? "" : " hidden"}>${NATIVE_HINT}</p>` +
+    `<div class="game-cards">` +
+    `<section class="game-card">` +
+    `<p class="game-card-label">タイムアタック</p>` +
+    `<p class="game-card-sub">60秒から開始<br />連続正解で時間が増える</p>` +
+    `<div class="game-card-best">` +
+    `<span>自己ベスト</span>` +
+    `<strong><span id="best-value">${best?.correct ?? "—"}</span><small>字</small></strong>` +
+    `</div>` +
+    `<button id="start" class="primary-button">はじめる</button>` +
+    `</section>` +
+    `<section class="game-card">` +
+    `<p class="game-card-label">今日の耐久</p>` +
+    `<p class="game-card-sub">${endurance.title} / ${endurance.author}<br />1回ミスしたら終了</p>` +
+    `<div class="game-card-best">` +
+    `<span>今日のベスト</span>` +
+    `<strong><span id="endurance-best-value">${enduranceBest ?? "—"}</span><small>字</small></strong>` +
+    `</div>` +
+    `<button id="start-endurance" class="secondary-button">挑戦する</button>` +
+    `</section>` +
+    `</div>` +
+    `</div>` +
+    `</main>`;
   const bestValue = host.querySelector<HTMLElement>("#best-value")!;
   const enduranceBestValue = host.querySelector<HTMLElement>("#endurance-best-value")!;
   const hint = host.querySelector<HTMLElement>(".native-hint")!;
