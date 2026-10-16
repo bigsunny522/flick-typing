@@ -2,8 +2,10 @@ import type { BehaviorVerdict } from "../anticheat/behavior";
 import type { KeyStroke } from "../keyboard/layout";
 import type { NativeEditLog } from "../anticheat/native";
 import type { JudgeResult } from "../game/judge";
+import { isDebugAllowed } from "./allow";
 
 export function debugEnabled(): boolean {
+  if (!isDebugAllowed(import.meta.env.DEV, location.hostname)) return false;
   return new URLSearchParams(location.search).has("debug");
 }
 
