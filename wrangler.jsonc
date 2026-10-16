@@ -16,4 +16,15 @@
       "database_id": "3ad7a4e4-2c47-4a55-bc55-b05a5b46458c",
     },
   ],
+  // main 以外のブランチは Workers Builds が `npx wrangler preview` でプレビューを作る。
+  // プレビューの結果が本番のランキング・集計に混ざらないよう、別の D1 を使う。
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "flick-typing-preview",
+        "database_id": "2da4238e-a92e-4c8b-845b-3957a2820bd2",
+      },
+    ],
+  },
 }
