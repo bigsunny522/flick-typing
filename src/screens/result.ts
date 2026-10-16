@@ -1,6 +1,7 @@
-import type { ResultsResponse } from "../ranking/types";
-import { loadName, type PlayMode } from "../storage";
+import type { RankingBoard, ResultsResponse } from "../ranking/types";
+import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
+import { showResultRank } from "./rank-offer";
 
 export type ResultValues = {
   correct: number;
@@ -21,7 +22,7 @@ export function renderResult(
   onAgain: () => void,
   onTitle: () => void,
   rank: Promise<ResultsResponse | null>,
-  onRanking: () => void,
+  onRanking: (board: RankingBoard) => void,
   onSave?: () => void,
 ): void {
   const total = values.correct + values.miss;
@@ -45,27 +46,12 @@ export function renderResult(
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
-  host.querySelector<HTMLButtonElement>("#ranking")?.addEventListener("click", onRanking);
-  showRank(host, rank, "今週");
+  host
+    .querySelector<HTMLButtonElement>("#ranking")
+    ?.addEventListener("click", () => onRanking("timeattack-weekly"));
+  showResultRank(host, rank, { kind: "timeattack", periodLabel: "今週", onRanking });
   bindThemeTap(host);
   removeConfettiLater(host);
-}
-
-/** 送信の返事が来たら順位を書く。画面が替わっていても何もしない */
-function showRank(host: HTMLElement, rank: Promise<ResultsResponse | null>, period: string): void {
-  const line = host.querySelector(".result-rank");
-  if (!line) return;
-  void rank.then((response) => {
-    const ranks = response?.ranks;
-    if (!line.isConnected || !ranks) return;
-    if (typeof ranks.period !== "number" || typeof ranks.alltime !== "number") return;
-    line.textContent = `${period} ${ranks.period}位 ・ 歴代 ${ranks.alltime}位`;
-    if (loadName() !== null) return;
-    const hint = document.createElement("p");
-    hint.className = "result-rank-hint";
-    hint.textContent = "名前を付けるとランキングに名前が出ます";
-    line.after(hint);
-  });
 }
 
 function prefersReducedMotion(): boolean {

@@ -238,6 +238,10 @@ export function openRankOffer(
 - `shell()` の `<main>` の中、先頭に `<div class="deco" aria-hidden="true"></div>` と `<button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button>` を置く(タイトル画面と同じ)
 - `host.innerHTML` に入れたあと、毎回 `bindThemeTap(host)` を呼ぶ(読み込み中・エラー・モードを切り替えて描き直すとき。描き直すたびに中身が作り直されるため)
 - 「ゲームへ戻る」のリンクや見出しと重ならないことを確かめる。重なる場合は止めて聞く
+- 「フリック / 標準キーボード」の切り替え(`.mode-select`)にスタイルが何も当たっていない。コミット 812528a でタイトル画面からモードの切り替えを消したとき、`src/style.css` の `.mode-select` のルールも一緒に消えたため。`stats.css` の `.stats-screen .mode-select` に、消えたルールを戻す:
+  - `.stats-screen .mode-select`: 既存の margin に加えて `display: grid; grid-template-columns: 1fr 1fr; gap: 10px;`
+  - `.stats-screen .mode-select button`: `height: 44px; color: var(--fg); font-size: 14px; font-weight: 700; border: 1px solid var(--line); background: var(--bg);`
+  - `.stats-screen .mode-select button[aria-pressed="true"]`: `color: var(--primary-ink); border-color: var(--primary-strong); background: var(--primary);`
 
 ### 14. スタイルの直し(`src/style.css`)
 

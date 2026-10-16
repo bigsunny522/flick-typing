@@ -113,6 +113,7 @@ body::before {
 button {
   font: inherit;
   touch-action: manipulation;
+  border-radius: 0;
 }
 .screen {
   position: relative;
@@ -888,7 +889,8 @@ button {
   touch-action: auto;
 }
 :is(html, body):has(.ranking-screen),
-:is(html, body):has(.name-form) {
+:is(html, body):has(.name-form),
+:is(html, body):has(.rank-offer) {
   touch-action: auto;
   user-select: auto;
   overscroll-behavior: auto;
@@ -1034,11 +1036,8 @@ button {
 .result-rank:empty {
   display: none;
 }
-.result-rank-hint {
-  margin: 6px 0 0;
-  color: var(--subtle);
-  font-size: 11px;
-  font-weight: 700;
+.result-rank + .endurance-reason {
+  margin-top: 12px;
 }
 .ranking-screen {
   width: min(640px, 100%);
@@ -1186,9 +1185,16 @@ button {
     700 16px "LINE Seed JP",
     sans-serif;
   border: 1px solid var(--line);
+  border-radius: 0;
   background: var(--bg);
+  appearance: none;
+  -webkit-appearance: none;
   user-select: text;
   -webkit-user-select: text;
+}
+#name-input:focus {
+  outline: none;
+  border-color: var(--primary-strong);
 }
 .name-form-hint {
   margin: 0;
@@ -1209,4 +1215,60 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+.name-form-actions button {
+  height: 48px;
+}
+.rank-offer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 15vh 24px 24px;
+  overflow: auto;
+  touch-action: auto;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+.rank-offer-box {
+  display: grid;
+  gap: 12px;
+  width: min(360px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.rank-offer-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+.rank-offer-rank {
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: 22px;
+  font-weight: 800;
+}
+.rank-offer-question {
+  margin: 0;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+.rank-offer-actions {
+  display: grid;
+  gap: 10px;
+}
+.rank-offer-actions button {
+  height: 48px;
+}
+.rank-offer-error {
+  margin: 0;
+  color: var(--miss);
+  font-size: 13px;
+  font-weight: 700;
+}
+.rank-offer-error:empty {
+  display: none;
 }

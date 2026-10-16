@@ -1,8 +1,8 @@
-import type { Ranks, ResultsResponse } from "../src/ranking/types";
+import type { RankChances, ResultsResponse } from "../src/ranking/types";
 import { validatePayload, type ResultPayload } from "../src/stats/payload";
 import { jstDateKey } from "../src/stats/summary";
 import type { Env } from "./index";
-import { resultRanks } from "./ranking";
+import { resultChances } from "./ranking";
 
 const MAX_BODY_BYTES = 2048;
 
@@ -19,22 +19,24 @@ export async function handleResults(request: Request, env: Env): Promise<Respons
   }
   const result = validatePayload(body, jstDateKey(Date.now()));
   if (!result.ok) return Response.json({ error: result.reason }, { status: 400 });
+  let resultId: number;
   try {
-    await insertResult(env, result.payload);
+    resultId = await insertResult(env, result.payload);
   } catch {
     return new Response(null, { status: 500 });
   }
-  let ranks: Ranks | null = null;
+  let chances: RankChances | null = null;
   try {
-    ranks = await resultRanks(env, result.payload, Date.now());
+    chances = await resultChances(env, result.payload, resultId, Date.now());
   } catch {
-    ranks = null;
+    chances = null;
   }
-  const response: ResultsResponse = { ranks };
+  const response: ResultsResponse = { resultId, chances };
   return Response.json(response);
 }
 
-async function insertResult(env: Env, payload: ResultPayload): Promise<void> {
+/** 行を入れて、入った行の `results.id` を返す */
+async function insertResult(env: Env, payload: ResultPayload): Promise<number> {
   if (payload.kind === "timeattack") {
     const statement = env.DB.prepare(
       "INSERT INTO results (player_id, kind, mode, rules_version, correct, miss, max_combo, duration_ms) " +
@@ -49,8 +51,7 @@ async function insertResult(env: Env, payload: ResultPayload): Promise<void> {
       payload.maxCombo,
       payload.durationMs,
     );
-    await statement.run();
-    return;
+    return await runInsert(statement);
   }
   const statement = env.DB.prepare(
     "INSERT INTO results (player_id, kind, mode, rules_version, correct, date_key, passage_id, end_reason, end_ms) " +
@@ -66,5 +67,13 @@ async function insertResult(env: Env, payload: ResultPayload): Promise<void> {
     payload.end,
     payload.endMs,
   );
-  await statement.run();
+  return await runInsert(statement);
+}
+
+/** 行を入れて、`meta.last_row_id` を返す。取れなければ投げて 500 にする */
+async function runInsert(statement: D1PreparedStatement): Promise<number> {
+  const out = await statement.run();
+  const resultId = out.meta.last_row_id;
+  if (typeof resultId !== "number" || resultId <= 0) throw new Error("last_row_id is missing");
+  return resultId;
 }

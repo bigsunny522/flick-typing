@@ -1,3 +1,4 @@
+import { handleEntry } from "./entry";
 import { handleName } from "./name";
 import { handleRanking } from "./ranking";
 import { handleResults } from "./results";
@@ -15,6 +16,10 @@ export default {
     if (path === "/api/ranking") {
       if (request.method !== "GET") return new Response(null, { status: 405 });
       return handleRanking(request, env);
+    }
+    if (path === "/api/ranking/entry") {
+      if (request.method !== "POST") return new Response(null, { status: 405 });
+      return handleEntry(request, env);
     }
     if (path === "/api/name") {
       if (request.method !== "PUT") return new Response(null, { status: 405 });

@@ -10,7 +10,7 @@ import {
   type ModeSummary,
   type StatsResponse,
 } from "../stats/summary";
-import { applyTheme, parseTheme } from "../theme";
+import { applyTheme, bindThemeTap, parseTheme } from "../theme";
 import { axisTicks } from "./chart";
 
 const MODE_ORDER: PlayMode[] = ["flick", "native"];
@@ -34,7 +34,12 @@ async function loadStats(): Promise<StatsResponse> {
 }
 
 function shell(body: string): string {
-  return `<main class="screen stats-screen">${backLink()}<h1>みんなの記録</h1>${body}</main>`;
+  return (
+    `<main class="screen stats-screen">` +
+    `<div class="deco" aria-hidden="true"></div>` +
+    `<button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button>` +
+    `${backLink()}<h1>みんなの記録</h1>${body}</main>`
+  );
 }
 
 function backLink(): string {
@@ -43,16 +48,19 @@ function backLink(): string {
 
 function renderLoading(host: HTMLElement): void {
   host.innerHTML = shell('<p class="stats-message">読み込み中…</p>');
+  bindThemeTap(host);
 }
 
 function renderError(host: HTMLElement): void {
   host.innerHTML = shell('<p class="stats-message">記録を読み込めませんでした</p>');
+  bindThemeTap(host);
 }
 
 function renderStats(host: HTMLElement, stats: StatsResponse): void {
   let current = loadMode();
   const draw = (): void => {
     host.innerHTML = shell(`${modeSelectHtml(current)}${sectionsHtml(stats, current)}`);
+    bindThemeTap(host);
     host.querySelectorAll<HTMLButtonElement>(".mode-select button").forEach((button) => {
       button.addEventListener("click", () => {
         const next = button.dataset.mode;

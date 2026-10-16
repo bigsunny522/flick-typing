@@ -129,7 +129,7 @@ function startGame(mode: PlayMode): void {
         () => startGame(mode),
         showTitle,
         rank,
-        () => openRanking("timeattack-weekly"),
+        (board) => openRanking(board),
         save,
       );
     },
@@ -198,7 +198,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
         () => startEnduranceRound(mode, dateKey),
         showTitle,
         rank,
-        () => openRanking("endurance-daily"),
+        (board) => openRanking(board),
         save,
       );
     },

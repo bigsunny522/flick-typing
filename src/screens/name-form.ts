@@ -10,7 +10,7 @@ const SEND_ERROR = "送れませんでした。時間をおいて試してくだ
 
 const SHELL =
   `<form class="name-form-box">` +
-  `<p class="name-form-title">名前を変える</p>` +
+  `<p class="name-form-title"></p>` +
   `<input type="text" id="name-input" maxlength="20" autocomplete="off" autocapitalize="off"` +
   ` spellcheck="false" enterkeyhint="done">` +
   `<p class="name-form-hint">10文字まで。記号・絵文字は使えません</p>` +
@@ -24,24 +24,28 @@ const SHELL =
 /**
  * ニックネームの入力欄を `host` の上に重ねて出す。
  * この入力欄はゲームの入力経路ではない(ランキング画面からしか開かない)
+ * `title` は見出しに出す文
  */
 export function openNameForm(
   host: HTMLElement,
   current: string | null,
   onDone: (name: string) => void,
+  title = "名前を変える",
 ): void {
   const overlay = document.createElement("div");
   overlay.className = "name-form";
   overlay.innerHTML = SHELL;
   host.append(overlay);
+  const heading = overlay.querySelector<HTMLParagraphElement>(".name-form-title");
   const form = overlay.querySelector<HTMLFormElement>(".name-form-box");
   const input = overlay.querySelector<HTMLInputElement>("#name-input");
   const error = overlay.querySelector<HTMLParagraphElement>(".name-form-error");
   const cancel = overlay.querySelector<HTMLButtonElement>("#name-cancel");
-  if (!form || !input || !error || !cancel) {
+  if (!heading || !form || !input || !error || !cancel) {
     overlay.remove();
     return;
   }
+  heading.textContent = title;
   const close = (): void => overlay.remove();
   input.value = current ?? "";
   cancel.addEventListener("click", close);
