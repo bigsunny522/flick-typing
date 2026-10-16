@@ -19,7 +19,7 @@
 - `src/screens/result-rank.ts`(新規): 順位の行とリンクの HTML と、あとから順位を埋める関数
 - `src/screens/result.ts`・`src/screens/endurance-result.ts`: 順位の行とリンクを置く
 - `src/style.css`: 順位の行とリンクの見た目
-- `src/stats-page/main.ts`: 順位の行を外す
+- `src/stats-page/main.ts`・`src/stats-page/stats.css`: 順位の行(`.stats-top` のルールも)を外す
 - `tests/stats-summary.test.ts`
 
 触らないもの: `wrangler.jsonc`、`migrations/`(テーブルは変えない)、`worker/index.ts`、`worker/stats.ts`、`src/stats/payload.ts`、`src/stats-page/chart.ts`。
