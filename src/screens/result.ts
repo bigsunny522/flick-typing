@@ -1,5 +1,6 @@
 import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
+import { startCelebration } from "./celebration";
 
 export type ResultValues = {
   correct: number;
@@ -11,8 +12,18 @@ export type ResultValues = {
   perfect: boolean;
 };
 
-/** 紙吹雪を降らせる秒数。一番長い紙吹雪(3.0 秒)+ 遅れ(0.6 秒)より少し長く取る */
-const CONFETTI_LIFETIME_MS = 3600;
+/** フラッシュの要素を取り除くまでの秒数 */
+const FLASH_SECONDS = 600;
+
+/** 帯のまわりに散らばる星。位置は `.perfect-burst` の左上を基準にする */
+const STARS = [
+  { sx: "-8%", sy: "-30%", ss: 14, sd: 0 },
+  { sx: "18%", sy: "105%", ss: 10, sd: 0.4 },
+  { sx: "48%", sy: "-45%", ss: 12, sd: 0.9 },
+  { sx: "80%", sy: "110%", ss: 16, sd: 0.2 },
+  { sx: "102%", sy: "-20%", ss: 10, sd: 1.2 },
+  { sx: "64%", sy: "120%", ss: 8, sd: 0.7 },
+];
 
 export function renderResult(
   host: HTMLElement,
@@ -25,13 +36,22 @@ export function renderResult(
   const accuracy = total === 0 ? 0 : values.correct / total;
   const cps = values.correct / (values.endTimeMs / 1000);
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
-  const ribbon = values.perfect ? '<p class="ribbon perfect-ribbon">PERFECT</p>' : "";
-  const confetti = values.perfect && !prefersReducedMotion() ? confettiMarkup() : "";
+  const reduced = prefersReducedMotion();
+  const showCelebration = values.perfect && !reduced;
+  const mainClass = values.perfect
+    ? `screen result-screen ${reduced ? "perfect-result-static" : "perfect-result"}`
+    : "screen result-screen";
+  const celebration = showCelebration
+    ? '<div class="celebration" aria-hidden="true"><div class="celebration-flash"></div></div>'
+    : "";
+  const burst = values.perfect ? perfectBurst() : "";
+  const scoreClass = values.perfect ? "score perfect-score" : "score";
   host.innerHTML =
-    `<main class="screen result-screen">${confetti}` +
+    celebration +
+    `<main class="${mainClass}">` +
     `<div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">RESULT</p>` +
     `<p class="result-mode">${modeLabel(values.mode)}</p>` +
-    `${ribbon}<p class="result-label">正しく打てた文字数</p><div class="score">${values.correct}<small>字</small></div>` +
+    `${burst}<p class="result-label">正しく打てた文字数</p><div class="${scoreClass}">${values.correct}<small>字</small></div>` +
     `${values.bestUpdated ? '<p class="ribbon accent-ribbon">自己ベスト更新</p>' : ""}<div class="result-grid">` +
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
     `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
@@ -41,37 +61,33 @@ export function renderResult(
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
   bindThemeTap(host);
-  removeConfettiLater(host);
+  startIfPossible(host, showCelebration);
 }
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** 画面全体に降る紙吹雪の入れ物を作る。色とタイミングは各 `<i>` に入れる */
-function confettiMarkup(): string {
-  const colors = ["var(--primary)", "var(--accent)", "var(--fg)"];
-  const pieces: string[] = [];
-  for (let i = 0; i < 40; i += 1) {
-    const x = Math.round(Math.random() * 100);
-    const delay = (Math.random() * 0.6).toFixed(2);
-    const duration = (1.8 + Math.random() * 1.2).toFixed(2);
-    const drift = Math.round(Math.random() * 80 - 40);
-    const spin = Math.round(360 + Math.random() * 720);
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    pieces.push(
-      `<i style="--x:${x};--delay:${delay}s;--duration:${duration}s;--drift:${drift}px;` +
-        `--spin:${spin}deg;--color:${color}"></i>`,
-    );
-  }
-  return `<div class="confetti" aria-hidden="true">${pieces.join("")}</div>`;
+/** 光の筋・星・帯を1つにまとめた入れ物を作る */
+function perfectBurst(): string {
+  const stars = STARS.map(
+    (star) =>
+      `<i class="perfect-star" style="--sx:${star.sx};--sy:${star.sy};--ss:${star.ss};--sd:${star.sd}"></i>`,
+  ).join("");
+  return (
+    `<div class="perfect-burst"><div class="perfect-rays"></div>${stars}` +
+    `<p class="ribbon perfect-ribbon">PERFECT</p></div>`
+  );
 }
 
-/** 落ちきる頃に紙吹雪を取り除く。画面が替わって外れていても `remove()` は安全 */
-function removeConfettiLater(host: HTMLElement): void {
-  const confetti = host.querySelector(".confetti");
-  if (!confetti) return;
-  window.setTimeout(() => confetti.remove(), CONFETTI_LIFETIME_MS);
+/** 描いたあと、紙吹雪を動かし、0.6 秒後にフラッシュを取り除く */
+function startIfPossible(host: HTMLElement, showCelebration: boolean): void {
+  if (!showCelebration) return;
+  const layer = host.querySelector<HTMLElement>(".celebration");
+  if (!layer) return;
+  const flash = layer.querySelector<HTMLElement>(".celebration-flash");
+  startCelebration(layer);
+  window.setTimeout(() => flash?.remove(), FLASH_SECONDS);
 }
 
 function modeLabel(mode: PlayMode): string {
