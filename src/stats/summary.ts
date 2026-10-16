@@ -28,6 +28,15 @@ export type TimeAttackRow = { playerId: string; correct: number; miss: number; d
 export type TimeAttackBest = { correct: number; accuracy: number; cps: number };
 export type ModeSummary<T> = { players: number; plays: number; bests: T[] };
 
+/** 1 行から自己ベストと同じ出し方で値を求める */
+function timeAttackValues(row: TimeAttackRow): TimeAttackBest {
+  return {
+    correct: row.correct,
+    accuracy: row.correct + row.miss === 0 ? 0 : row.correct / (row.correct + row.miss),
+    cps: row.correct / (row.durationMs / 1000),
+  };
+}
+
 /** 匿名 ID ごとの自己ベスト。bests は correct の大きい順 */
 export function summarizeTimeAttack(rows: TimeAttackRow[]): ModeSummary<TimeAttackBest> {
   const bestRows = new Map<string, TimeAttackRow>();
@@ -41,11 +50,7 @@ export function summarizeTimeAttack(rows: TimeAttackRow[]): ModeSummary<TimeAtta
     const sameCorrectLessMiss = row.correct === current.correct && row.miss < current.miss;
     if (betterCorrect || sameCorrectLessMiss) bestRows.set(row.playerId, row);
   }
-  const bests = [...bestRows.values()].map((row) => ({
-    correct: row.correct,
-    accuracy: row.correct + row.miss === 0 ? 0 : row.correct / (row.correct + row.miss),
-    cps: row.correct / (row.durationMs / 1000),
-  }));
+  const bests = [...bestRows.values()].map(timeAttackValues);
   bests.sort((left, right) => right.correct - left.correct);
   return { players: bestRows.size, plays: rows.length, bests };
 }
@@ -65,6 +70,14 @@ export function summarizeEndurance(rows: EnduranceRow[]): ModeSummary<number> {
 }
 
 export type Bin = { from: number; to: number; count: number };
+
+/** 分布の区間の幅。ページと Worker の両方がこれを使う */
+export const BIN = {
+  correct: { width: 10 },
+  accuracy: { width: 0.05, upper: 1 },
+  cps: { width: 0.5 },
+  progress: { width: 0.1, upper: 1 },
+} as const;
 
 /** 浮動小数の誤差を吸収して、値が入る区間の index を求める */
 function binIndex(value: number, width: number): number {
@@ -97,6 +110,47 @@ export function histogram(values: number[], width: number, upper?: number): Bin[
   return bins;
 }
 
+export type TimeAttackPlayBins = { correct: Bin[]; accuracy: Bin[]; cps: Bin[] };
+export type EndurancePlayBins = { progress: Bin[] };
+
+/** 全プレイ(自己ベストに絞らない)の区間ごとの数 */
+export function timeAttackPlayBins(rows: TimeAttackRow[]): TimeAttackPlayBins {
+  const values = rows.map(timeAttackValues);
+  return {
+    correct: histogram(
+      values.map((row) => row.correct),
+      BIN.correct.width,
+    ),
+    accuracy: histogram(
+      values.map((row) => row.accuracy),
+      BIN.accuracy.width,
+      BIN.accuracy.upper,
+    ),
+    cps: histogram(
+      values.map((row) => row.cps),
+      BIN.cps.width,
+    ),
+  };
+}
+
+/** 全プレイ(自己ベストに絞らない)の進んだ割合の区間ごとの数 */
+export function endurancePlayBins(rows: EnduranceRow[], totalReading: number): EndurancePlayBins {
+  return {
+    progress: histogram(
+      rows.map((row) => row.correct / totalReading),
+      BIN.progress.width,
+      BIN.progress.upper,
+    ),
+  };
+}
+
+/** 自分の値の順位。自分より大きい値の数 + 1。同じ値は同じ順位。values が空なら null */
+export function rankOf(values: number[], mine: number): number | null {
+  if (values.length === 0) return null;
+  const greater = values.filter((value) => value > mine).length;
+  return greater + 1;
+}
+
 /** 自分の値が上位何%か。values が空なら null */
 export function topPercent(values: number[], mine: number): number | null {
   if (values.length === 0) return null;
@@ -105,18 +159,21 @@ export function topPercent(values: number[], mine: number): number | null {
   return Math.min(100, Math.max(1, percent));
 }
 
+export type TimeAttackSummary = ModeSummary<TimeAttackBest> & { all: TimeAttackPlayBins };
+export type EnduranceSummary = ModeSummary<number> & { all: EndurancePlayBins };
+
 export type StatsResponse = {
   timeattack: {
     rulesVersion: number;
-    flick: ModeSummary<TimeAttackBest>;
-    native: ModeSummary<TimeAttackBest>;
+    flick: TimeAttackSummary;
+    native: TimeAttackSummary;
   };
   endurance: {
     rulesVersion: number;
     dateKey: string;
     passageId: string;
     totalReading: number;
-    flick: ModeSummary<number>;
-    native: ModeSummary<number>;
+    flick: EnduranceSummary;
+    native: EnduranceSummary;
   };
 };

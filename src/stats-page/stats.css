@@ -20,6 +20,10 @@ html.stats body {
   margin-bottom: 24px;
 }
 
+.stats-screen .mode-select + .mode-select {
+  margin-top: -12px;
+}
+
 .stats-section {
   padding: 16px 0;
   border-top: 1px solid var(--line);

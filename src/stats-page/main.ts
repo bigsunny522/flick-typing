@@ -4,7 +4,9 @@ import { PASSAGES } from "../game/endurance";
 import type { PlayMode } from "../game/mode";
 import { loadBest, loadEnduranceBest, loadMode, loadTheme } from "../storage";
 import {
+  BIN,
   histogram,
+  rankOf,
   topPercent,
   type Bin,
   type ModeSummary,
@@ -17,6 +19,18 @@ const MODE_ORDER: PlayMode[] = ["flick", "native"];
 const MODE_LABEL: Record<PlayMode, string> = {
   flick: "フリック",
   native: "標準キーボード",
+};
+
+type View = "best" | "all";
+
+const VIEW_ORDER: View[] = ["best", "all"];
+const VIEW_LABEL: Record<View, string> = {
+  best: "自己ベスト",
+  all: "全プレイ",
+};
+const VIEW_UNIT: Record<View, string> = {
+  best: "人",
+  all: "回",
 };
 
 type Chart = {
@@ -51,13 +65,25 @@ function renderError(host: HTMLElement): void {
 
 function renderStats(host: HTMLElement, stats: StatsResponse): void {
   let current = loadMode();
+  let view: View = "best";
   const draw = (): void => {
-    host.innerHTML = shell(`${modeSelectHtml(current)}${sectionsHtml(stats, current)}`);
-    host.querySelectorAll<HTMLButtonElement>(".mode-select button").forEach((button) => {
+    host.innerHTML = shell(
+      `${modeSelectHtml(current)}${viewSelectHtml(view)}${sectionsHtml(stats, current, view)}`,
+    );
+    host.querySelectorAll<HTMLButtonElement>(".mode-select button[data-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         const next = button.dataset.mode;
         if (next === "flick" || next === "native") {
           current = next;
+          draw();
+        }
+      });
+    });
+    host.querySelectorAll<HTMLButtonElement>(".mode-select button[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const next = button.dataset.view;
+        if (next === "best" || next === "all") {
+          view = next;
           draw();
         }
       });
@@ -74,60 +100,87 @@ function modeSelectHtml(mode: PlayMode): string {
   return `<div class="mode-select">${buttons}</div>`;
 }
 
-function sectionsHtml(stats: StatsResponse, mode: PlayMode): string {
-  return timeattackHtml(stats, mode) + enduranceHtml(stats, mode);
+function viewSelectHtml(view: View): string {
+  const buttons = VIEW_ORDER.map(
+    (item) =>
+      `<button type="button" data-view="${item}" aria-pressed="${String(item === view)}">${VIEW_LABEL[item]}</button>`,
+  ).join("");
+  return `<div class="mode-select">${buttons}</div>`;
 }
 
-function timeattackHtml(stats: StatsResponse, mode: PlayMode): string {
+function sectionsHtml(stats: StatsResponse, mode: PlayMode, view: View): string {
+  return timeattackHtml(stats, mode, view) + enduranceHtml(stats, mode, view);
+}
+
+function timeattackHtml(stats: StatsResponse, mode: PlayMode, view: View): string {
   const summary = stats.timeattack[mode];
   const best = loadBest(mode);
   const correct = best?.correct ?? null;
   const corrects = summary.bests.map((row) => row.correct);
+  const rank = correct === null ? null : rankOf(corrects, correct);
   const top = correct === null ? null : topPercent(corrects, correct);
+  const unit = VIEW_UNIT[view];
   const charts =
     summary.players === 0
       ? emptyHtml()
-      : chartHtml({
-          title: "正解数(文字)",
-          bins: histogram(corrects, 10),
-          mine: correct,
-          label: (bin) => `${bin.from}〜${bin.to}`,
-          tick: (value) => String(value),
-        }) +
-        chartHtml({
-          title: "正確率",
-          bins: histogram(
-            summary.bests.map((row) => row.accuracy),
-            0.05,
-            1,
-          ),
-          mine: best?.accuracy ?? null,
-          label: percentLabel,
-          tick: percentTick,
-        }) +
-        chartHtml({
-          title: "打鍵速度(文字/秒)",
-          bins: histogram(
-            summary.bests.map((row) => row.cps),
-            0.5,
-          ),
-          mine: best?.cps ?? null,
-          label: (bin) => `${bin.from}〜${bin.to}文字/秒`,
-          tick: (value) => String(value),
-        });
+      : chartOrEmpty(
+          {
+            title: "正解数(文字)",
+            bins: view === "all" ? summary.all.correct : histogram(corrects, BIN.correct.width),
+            mine: correct,
+            label: (bin) => `${bin.from}〜${bin.to}`,
+            tick: (value) => String(value),
+          },
+          unit,
+        ) +
+        chartOrEmpty(
+          {
+            title: "正確率",
+            bins:
+              view === "all"
+                ? summary.all.accuracy
+                : histogram(
+                    summary.bests.map((row) => row.accuracy),
+                    BIN.accuracy.width,
+                    BIN.accuracy.upper,
+                  ),
+            mine: best?.accuracy ?? null,
+            label: percentLabel,
+            tick: percentTick,
+          },
+          unit,
+        ) +
+        chartOrEmpty(
+          {
+            title: "打鍵速度(文字/秒)",
+            bins:
+              view === "all"
+                ? summary.all.cps
+                : histogram(
+                    summary.bests.map((row) => row.cps),
+                    BIN.cps.width,
+                  ),
+            mine: best?.cps ?? null,
+            label: (bin) => `${bin.from}〜${bin.to}文字/秒`,
+            tick: (value) => String(value),
+          },
+          unit,
+        );
   return sectionHtml(
     "タイムアタック",
     summary,
     bestLineHtml("あなたの自己ベスト", correct),
+    rank,
     top,
     charts,
   );
 }
 
-function enduranceHtml(stats: StatsResponse, mode: PlayMode): string {
+function enduranceHtml(stats: StatsResponse, mode: PlayMode, view: View): string {
   const summary = stats.endurance[mode];
   const best = loadEnduranceBest(mode, stats.endurance.dateKey);
   const correct = best?.correct ?? null;
+  const rank = correct === null ? null : rankOf(summary.bests, correct);
   const top = correct === null ? null : topPercent(summary.bests, correct);
   const total = stats.endurance.totalReading;
   const passage = PASSAGES.find((item) => item.id === stats.endurance.passageId);
@@ -135,37 +188,58 @@ function enduranceHtml(stats: StatsResponse, mode: PlayMode): string {
   const charts =
     summary.players === 0
       ? emptyHtml()
-      : chartHtml({
-          title: "進んだ割合",
-          bins: histogram(
-            summary.bests.map((value) => value / total),
-            0.1,
-            1,
-          ),
-          mine: correct === null ? null : correct / total,
-          label: percentLabel,
-          tick: percentTick,
-        });
-  return sectionHtml(title, summary, bestLineHtml("あなたの今日の記録", correct), top, charts);
+      : chartOrEmpty(
+          {
+            title: "進んだ割合",
+            bins:
+              view === "all"
+                ? summary.all.progress
+                : histogram(
+                    summary.bests.map((value) => value / total),
+                    BIN.progress.width,
+                    BIN.progress.upper,
+                  ),
+            mine: correct === null ? null : correct / total,
+            label: percentLabel,
+            tick: percentTick,
+          },
+          VIEW_UNIT[view],
+        );
+  return sectionHtml(
+    title,
+    summary,
+    bestLineHtml("あなたの今日の記録", correct),
+    rank,
+    top,
+    charts,
+  );
 }
 
 function sectionHtml(
   title: string,
   summary: ModeSummary<unknown>,
   best: string,
+  rank: number | null,
   top: number | null,
   charts: string,
 ): string {
-  const topLine = top === null ? "" : `<p class="stats-top">上位 ${top}%</p>`;
   return (
     `<section class="stats-section">` +
     `<h2>${title}</h2>` +
     `<p class="stats-count">${summary.players}人・${summary.plays}プレイ</p>` +
     best +
-    topLine +
+    rankLineHtml(rank, top) +
     charts +
     `</section>`
   );
+}
+
+/** 1〜100 位は「○位」、それより下は「上位 ○%」。順位が出ないときは空 */
+function rankLineHtml(rank: number | null, top: number | null): string {
+  if (rank === null) return "";
+  if (rank <= 100) return `<p class="stats-top">${rank}位</p>`;
+  if (top === null) return "";
+  return `<p class="stats-top">上位 ${top}%</p>`;
 }
 
 function bestLineHtml(label: string, correct: number | null): string {
@@ -177,12 +251,18 @@ function emptyHtml(): string {
   return '<p class="stats-message">まだ記録がありません</p>';
 }
 
-function chartHtml(chart: Chart): string {
+/** 区間が空のときはグラフを描かずに「まだ記録がありません」を出す */
+function chartOrEmpty(chart: Chart, unit: string): string {
+  if (chart.bins.length === 0) return emptyHtml();
+  return chartHtml(chart, unit);
+}
+
+function chartHtml(chart: Chart, unit: string): string {
   const binCount = chart.bins.length;
   const maxCount = Math.max(1, ...chart.bins.map((bin) => bin.count));
   const mineIndex = chart.mine === null ? -1 : binIndexOf(chart.bins, chart.mine);
   const showCounts = binCount <= 12;
-  const maxNote = showCounts ? "" : `<span class="stats-max">最大 ${maxCount}人</span>`;
+  const maxNote = showCounts ? "" : `<span class="stats-max">最大 ${maxCount}${unit}</span>`;
   const bars = chart.bins
     .map((bin, index) => {
       const height = Math.round((bin.count / maxCount) * 100);
@@ -191,7 +271,7 @@ function chartHtml(chart: Chart): string {
         showCounts && bin.count >= 1 ? `<span class="stats-value">${bin.count}</span>` : "";
       const mine = index === mineIndex ? '<span class="stats-you">あなた</span>' : "";
       return (
-        `<div class="stats-col" title="${chart.label(bin)} ${bin.count}人">` +
+        `<div class="stats-col" title="${chart.label(bin)} ${bin.count}${unit}">` +
         mine +
         count +
         `<span class="stats-bar${mineClass}" style="height: ${height}%"></span>` +

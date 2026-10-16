@@ -2,9 +2,11 @@ import { PASSAGES, passageFor } from "../src/game/endurance";
 import type { PlayMode } from "../src/game/mode";
 import { ENDURANCE_RULES_VERSION, RULES_VERSION } from "../src/game/rules";
 import {
+  endurancePlayBins,
   jstDateKey,
   summarizeEndurance,
   summarizeTimeAttack,
+  timeAttackPlayBins,
   totalReading,
   type EnduranceRow,
   type StatsResponse,
@@ -41,19 +43,33 @@ export async function handleStats(env: Env): Promise<Response> {
   )
     .bind(ENDURANCE_RULES_VERSION, dateKey)
     .all<EnduranceRecord>();
+  const total = totalReading(passage);
+  const timeattackFlick = timeAttackRows(timeattack.results, "flick");
+  const timeattackNative = timeAttackRows(timeattack.results, "native");
+  const enduranceFlick = enduranceRows(endurance.results, "flick");
+  const enduranceNative = enduranceRows(endurance.results, "native");
   const stats: StatsResponse = {
     timeattack: {
       rulesVersion: RULES_VERSION,
-      flick: summarizeTimeAttack(timeAttackRows(timeattack.results, "flick")),
-      native: summarizeTimeAttack(timeAttackRows(timeattack.results, "native")),
+      flick: { ...summarizeTimeAttack(timeattackFlick), all: timeAttackPlayBins(timeattackFlick) },
+      native: {
+        ...summarizeTimeAttack(timeattackNative),
+        all: timeAttackPlayBins(timeattackNative),
+      },
     },
     endurance: {
       rulesVersion: ENDURANCE_RULES_VERSION,
       dateKey,
       passageId: passage.id,
-      totalReading: totalReading(passage),
-      flick: summarizeEndurance(enduranceRows(endurance.results, "flick")),
-      native: summarizeEndurance(enduranceRows(endurance.results, "native")),
+      totalReading: total,
+      flick: {
+        ...summarizeEndurance(enduranceFlick),
+        all: endurancePlayBins(enduranceFlick, total),
+      },
+      native: {
+        ...summarizeEndurance(enduranceNative),
+        all: endurancePlayBins(enduranceNative, total),
+      },
     },
   };
   return new Response(JSON.stringify(stats), {

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Passage } from "../src/game/endurance";
 import {
+  endurancePlayBins,
   histogram,
   jstDateKey,
   previousDateKey,
+  rankOf,
   summarizeEndurance,
   summarizeTimeAttack,
+  timeAttackPlayBins,
   topPercent,
   totalReading,
 } from "../src/stats/summary";
@@ -201,5 +204,76 @@ describe("topPercent", () => {
 
   it("同じ値が並ぶとき", () => {
     expect(topPercent([10, 10, 20, 30], 10)).toBe(75);
+  });
+});
+
+describe("rankOf", () => {
+  it("空なら null", () => {
+    expect(rankOf([], 100)).toBeNull();
+  });
+
+  it("いちばん上なら 1", () => {
+    expect(rankOf([40, 30, 20, 10], 40)).toBe(1);
+  });
+
+  it("いちばん下なら列の長さと同じ順位", () => {
+    expect(rankOf([40, 30, 20, 10], 10)).toBe(4);
+  });
+
+  it("同じ値は同じ順位", () => {
+    expect(rankOf([40, 30, 30, 10], 30)).toBe(2);
+  });
+
+  it("同順位のぶんだけ次の順位が飛ぶ", () => {
+    expect(rankOf([40, 30, 30, 10], 20)).toBe(4);
+  });
+
+  it("列にない値でも順位を返す", () => {
+    expect(rankOf([40, 30, 20, 10], 50)).toBe(1);
+  });
+});
+
+describe("timeAttackPlayBins", () => {
+  it("同じ ID の行が複数あっても、すべての行が数に入る", () => {
+    const bins = timeAttackPlayBins([
+      { playerId: "a", correct: 5, miss: 0, durationMs: 60000 },
+      { playerId: "a", correct: 25, miss: 0, durationMs: 60000 },
+    ]);
+    expect(bins.correct).toEqual([
+      { from: 0, to: 10, count: 1 },
+      { from: 10, to: 20, count: 0 },
+      { from: 20, to: 30, count: 1 },
+    ]);
+    expect(bins.accuracy.reduce((sum, bin) => sum + bin.count, 0)).toBe(2);
+    expect(bins.cps.reduce((sum, bin) => sum + bin.count, 0)).toBe(2);
+  });
+
+  it("行が 0 件なら各配列は空", () => {
+    expect(timeAttackPlayBins([])).toEqual({ correct: [], accuracy: [], cps: [] });
+  });
+});
+
+describe("endurancePlayBins", () => {
+  it("同じ ID の行が複数あっても、すべての行が数に入る", () => {
+    const bins = endurancePlayBins(
+      [
+        { playerId: "a", correct: 50 },
+        { playerId: "a", correct: 150 },
+      ],
+      200,
+    );
+    expect(bins.progress.reduce((sum, bin) => sum + bin.count, 0)).toBe(2);
+  });
+
+  it("行が 0 件なら各配列は空", () => {
+    expect(endurancePlayBins([], 200)).toEqual({ progress: [] });
+  });
+
+  it("progress が correct / totalReading の区間に入る", () => {
+    const bins = endurancePlayBins([{ playerId: "a", correct: 50 }], 200);
+    expect(bins.progress).toHaveLength(10);
+    expect(bins.progress[2].count).toBe(1);
+    expect(bins.progress[2].from).toBeCloseTo(0.2);
+    expect(bins.progress[2].to).toBeCloseTo(0.3);
   });
 });
