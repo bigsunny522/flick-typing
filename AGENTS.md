@@ -20,7 +20,7 @@ src/anticheat/   環境チェック・挙動分析・入力ログ(DOM に触れ�
 src/native/      標準キーボードのモードの隠した入力欄(DOM)
 src/data/        お題の JSON
 src/stats/       結果の送信データのチェック・集計(DOM に触れない純粋な関数。Worker でも使う)
-src/ranking/     ランキングの検証・計算し直し・名前・期間(DOM に触れない純粋な関数。Worker でも使う)
+src/ranking/     ランキングの名前・期間・API の型(DOM に触れない純粋な関数。Worker でも使う)
 src/stats-page/  集計ページ(/stats)の描画
 worker/          Cloudflare Worker の入口(/api/* を処理し、ほかは dist の静的アセットを返す)
 migrations/      D1 のテーブル定義
