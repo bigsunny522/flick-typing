@@ -19,6 +19,7 @@
 
 - `src/keyboard/**`、`src/game/**`、`src/anticheat/**`、`src/native/**`、`src/screens/play.ts`、`src/screens/endurance.ts`
 - `src/storage.ts`(`loadMode` / `saveMode` は残す。呼ばなくなってもよい)
+- `src/stats-page/**`、`stats.html`(集計ページはフリックの集計も見せるので、モード切り替えを残す)
 - `worker/**`、`tests/**`、`index.html`、`package.json`
 
 ## 仕様
@@ -45,7 +46,7 @@
 - [ ] `npm test` が通る
 - [ ] `npm run build` が通る
 - [ ] `npm run format:check` が通る
-- [ ] `grep -rn "mode-select" src` が何も出さない
+- [ ] `grep -rn "mode-select" src --exclude-dir=stats-page` が何も出さない(集計ページ `src/stats-page/` は自分のモード切り替えを持つので対象外。触らない)
 - [ ] 以下は Claude Code がブラウザで確かめる: タイトル画面にモードの切り替えがなく、ヒントが出ている。「はじめる」でスマホのキーボードのモード(隠した入力欄にフォーカス)が始まる。結果画面にモード名が出ない
 
 ## 対象外
