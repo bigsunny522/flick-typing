@@ -5,7 +5,7 @@
 `/stats` の分布は、匿名 ID ごとの自己ベストだけで描いている(`docs/spec-result-stats.md` の7章、`docs/spec-stats-histogram.md`)。オーナーの要望:
 
 - 分布は「自己ベスト」と「全プレイ」を切り替えて見られるようにする。全プレイの分布は、あとでランクの基準を決める材料にする
-- 順位は自己ベスト同士で比べる。「上位○%」ではなく「○位」で出す。人が増えたら、100位までは順位、それより下は「上位○%」にする
+- 順位は自己ベスト同士で比べる。「上位○%」ではなく「○位」で出す。人が増えたら、100位までは順位、それより下は「TOP200」のような区切りで出す(オーナー:「TOP200みたいな感じ」)
 
 ## 変更対象
 
@@ -77,7 +77,25 @@ export function rankOf(values: number[], mine: number): number | null;
 | `[40, 30, 30, 10]` | 20 | `4` |
 | `[40, 30, 20, 10]` | 50 | `1`(列にない値でもよい) |
 
-`topPercent` は残す(101位以下で使う)。
+`topPercent` は残す(ページからは使わなくなるが、テストごと残す)。
+
+```ts
+/** 順位の表示。1〜100 位は「○位」、それより下は rank 以上で最小の区切りを「TOP○」で出す */
+export function rankLabel(rank: number): string;
+```
+
+区切りは 200, 500, 1000, 2000, 5000, 10000, … と、1・2・5 に 10 の累乗をかけた数(200 以上)を小さい順にたどる。
+
+| rank | 返り値 |
+|---|---|
+| 1 | `1位` |
+| 100 | `100位` |
+| 101 | `TOP200` |
+| 200 | `TOP200` |
+| 201 | `TOP500` |
+| 501 | `TOP1000` |
+| 1001 | `TOP2000` |
+| 12000 | `TOP20000` |
 
 ### 4. API(`worker/stats.ts`)
 
@@ -119,8 +137,7 @@ export function rankOf(values: number[], mine: number): number | null;
 | 条件 | 表示 |
 |---|---|
 | 自己ベストがない | 行を出さない(今と同じ) |
-| `rankOf` が 1〜100 | `○位` |
-| `rankOf` が 101 以上 | `上位 ○%`(`topPercent` の値。今と同じ書き方) |
+| `rankOf` が 1 以上 | `rankLabel(rankOf の値)`(`12位` / `TOP200` など) |
 | `bests` が空 | 行を出さない |
 
 - 分母(`○人中`)は付けない。自己ベストが API に届いていない場合(集計を始める前の記録など)に、`5人中 6位` のような表示になるのを避けるため。人数は上の `○人・○プレイ` の行で見える
@@ -129,7 +146,7 @@ export function rankOf(values: number[], mine: number): number | null;
 ## 受け入れ条件
 
 - `npx tsc --noEmit` / `npm run typecheck:worker` / `npm test` / `npm run build` / `npm run format:check` がすべて通る
-- `tests/stats-summary.test.ts` に、3章の表の1行ごとの `it` がある
+- `tests/stats-summary.test.ts` に、3章の `rankOf` と `rankLabel` の表の1行ごとの `it` がある
 - `tests/stats-summary.test.ts` に、`timeAttackPlayBins` と `endurancePlayBins` について次の `it` がある
   - 同じ匿名 ID の行が複数あっても、すべての行が数に入る(自己ベストに絞らない)
   - 行が 0 件なら各配列が `[]`
