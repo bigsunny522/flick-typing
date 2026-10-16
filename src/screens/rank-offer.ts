@@ -1,7 +1,6 @@
 import { offerPeriods } from "../ranking/offer";
 import type { RankChances, RankingBoard, ResultsResponse } from "../ranking/types";
 import { loadName, loadPlayerId } from "../storage";
-import { openNameForm } from "./name-form";
 
 /** ポップアップに出す期間 */
 type OfferPeriod = "period" | "alltime";
@@ -22,7 +21,7 @@ const SHELL =
   `<p class="rank-offer-rank"></p>` +
   `<p class="rank-offer-question"></p>` +
   `<div class="rank-offer-actions">` +
-  `<button type="button" class="rank-offer-ok primary-button"></button>` +
+  `<button type="button" class="rank-offer-ok primary-button">載せる</button>` +
   `<button type="button" class="rank-offer-cancel secondary-button">載せない</button>` +
   `</div>` +
   `<p class="rank-offer-error" role="alert"></p>` +
@@ -39,7 +38,7 @@ export function openRankOffer(
     resultId: number;
     chances: RankChances;
     periods: OfferPeriod[];
-    onOpenRanking: (board: RankingBoard) => void;
+    onOpenRanking: (board: RankingBoard, askName: boolean) => void;
   },
 ): void {
   const overlay = document.createElement("div");
@@ -60,31 +59,18 @@ export function openRankOffer(
   drawQuestion();
   host.append(overlay);
   ok.addEventListener("click", () => {
-    if (loadName() !== null) {
-      void send();
-      return;
-    }
-    openNameForm(
-      host,
-      null,
-      () => {
-        void send();
-      },
-      "名前を付ける",
-    );
+    void send();
   });
   cancel.addEventListener("click", () => overlay.remove());
 
-  /** 名前の状態で問いかけの文とボタンの文を変える。名前は必ず `textContent` で入れる */
+  /** 名前の状態で問いかけの文を変える。名前は必ず `textContent` で入れる */
   function drawQuestion(): void {
     const name = loadName();
     if (name === null) {
-      question.textContent = "名前を付けてランキングに載せますか?";
-      ok.textContent = "名前を付けて載せる";
+      question.textContent = "ランキングに載せますか?";
       return;
     }
     question.textContent = `『${name}』で載せますか?`;
-    ok.textContent = "載せる";
   }
 
   /** 記録を載せて、乗ったらランキング画面へ移る。だめなら文を出して閉じない */
@@ -107,7 +93,7 @@ export function openRankOffer(
       return;
     }
     overlay.remove();
-    options.onOpenRanking(boardToOpen());
+    options.onOpenRanking(boardToOpen(), loadName() === null);
   }
 
   /** 移る先。今期が先なら週 / 今日のボード、歴代が先なら歴代のボード */
@@ -128,7 +114,7 @@ export function showResultRank(
   options: {
     kind: OfferKind;
     periodLabel: string; // 順位の行に出す今期の名前(タイムアタックは今週、耐久は今日)
-    onRanking: (board: RankingBoard) => void;
+    onRanking: (board: RankingBoard, askName: boolean) => void;
   },
 ): void {
   const line = host.querySelector(".result-rank");

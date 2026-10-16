@@ -62,9 +62,9 @@ function showTitle(): void {
   );
 }
 
-/** ランキング画面を開く。戻るときはタイトルに戻る */
-function openRanking(board: RankingBoard): void {
-  renderRanking(root, board, showTitle);
+/** ランキング画面を開く。戻るときはタイトルに戻る。`askName` は移ってから名前を聞くか */
+function openRanking(board: RankingBoard, askName = false): void {
+  renderRanking(root, board, showTitle, askName);
 }
 
 function startGame(mode: PlayMode): void {
@@ -129,7 +129,7 @@ function startGame(mode: PlayMode): void {
         () => startGame(mode),
         showTitle,
         rank,
-        (board) => openRanking(board),
+        (board, askName) => openRanking(board, askName),
         save,
       );
     },
@@ -198,7 +198,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
         () => startEnduranceRound(mode, dateKey),
         showTitle,
         rank,
-        (board) => openRanking(board),
+        (board, askName) => openRanking(board, askName),
         save,
       );
     },

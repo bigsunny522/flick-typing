@@ -22,7 +22,7 @@ export function renderEnduranceResult(
   onAgain: () => void,
   onTitle: () => void,
   rank: Promise<ResultsResponse | null>,
-  onRanking: (board: RankingBoard) => void,
+  onRanking: (board: RankingBoard, askName: boolean) => void,
   onSave?: () => void,
 ): void {
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
@@ -58,7 +58,7 @@ export function renderEnduranceResult(
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
   host
     .querySelector<HTMLButtonElement>("#ranking")
-    ?.addEventListener("click", () => onRanking("endurance-daily"));
+    ?.addEventListener("click", () => onRanking("endurance-daily", false));
   showResultRank(host, rank, { kind: "endurance", periodLabel: "今日", onRanking });
   bindThemeTap(host);
 }

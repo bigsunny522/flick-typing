@@ -22,7 +22,7 @@ export function renderResult(
   onAgain: () => void,
   onTitle: () => void,
   rank: Promise<ResultsResponse | null>,
-  onRanking: (board: RankingBoard) => void,
+  onRanking: (board: RankingBoard, askName: boolean) => void,
   onSave?: () => void,
 ): void {
   const total = values.correct + values.miss;
@@ -48,7 +48,7 @@ export function renderResult(
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
   host
     .querySelector<HTMLButtonElement>("#ranking")
-    ?.addEventListener("click", () => onRanking("timeattack-weekly"));
+    ?.addEventListener("click", () => onRanking("timeattack-weekly", false));
   showResultRank(host, rank, { kind: "timeattack", periodLabel: "今週", onRanking });
   bindThemeTap(host);
   removeConfettiLater(host);

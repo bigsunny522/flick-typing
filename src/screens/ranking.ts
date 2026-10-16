@@ -44,6 +44,7 @@ export function renderRanking(
   host: HTMLElement,
   initialBoard: RankingBoard,
   onBack: () => void,
+  askName = false,
 ): void {
   let board = initialBoard;
   /** 途中で切り替えたら古い応答を使わないための番号 */
@@ -66,13 +67,11 @@ export function renderRanking(
     });
   }
   need<HTMLButtonElement>(host, "#change-name").addEventListener("click", () => {
-    openNameForm(host, loadName(), (name) => {
-      nameText.textContent = `名前: ${name}`;
-      load();
-    });
+    openNameForm(host, loadName(), applyName);
   });
   need<HTMLButtonElement>(host, "#ranking-back").addEventListener("click", onBack);
   load();
+  if (askName) openNameForm(host, null, applyName, "ニックネームを登録");
 
   function switchTo(next: RankingBoard): void {
     if (next === board) return;
@@ -103,6 +102,12 @@ export function renderRanking(
 
   function syncName(): void {
     nameText.textContent = `名前: ${loadName() ?? DEFAULT_NAME}`;
+  }
+
+  /** 名前が決まったとき。「名前を変える」と、移ってから聞く入力欄の両方で使う */
+  function applyName(name: string): void {
+    nameText.textContent = `名前: ${name}`;
+    load();
   }
 
   function load(): void {
