@@ -1,0 +1,122 @@
+<!doctype html>
+<!--
+  public/ogp.png の元。1200×630 で開いてスクリーンショットを撮る。
+  色は src/style.css の sky テーマ(:root)と同じ。
+-->
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&family=Outfit:wght@300;400;500;600&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+      .card {
+        position: relative;
+        box-sizing: border-box;
+        width: 1200px;
+        height: 630px;
+        padding: 72px 80px;
+        overflow: hidden;
+        color: #171717;
+        font-family: "LINE Seed JP", sans-serif;
+        background-color: #ffffff;
+        background-image:
+          linear-gradient(rgba(123, 171, 255, 0.13) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(123, 171, 255, 0.13) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      .band {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 16px;
+        background: #7babff;
+      }
+      .deco {
+        position: absolute;
+        right: -120px;
+        bottom: -160px;
+        width: 560px;
+        height: 560px;
+        border-radius: 50%;
+        background: #c9dbff;
+        opacity: 0.6;
+      }
+      .ribbon {
+        display: inline-block;
+        margin: 0;
+        padding: 6px 14px;
+        color: #1d4ed8;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        border: 2px solid #7babff;
+        background: #ffffff;
+      }
+      h1 {
+        margin: 28px 0 0;
+        font-size: 92px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+      .lead {
+        margin: 20px 0 0;
+        color: #4a5565;
+        font-size: 34px;
+        font-weight: 700;
+      }
+      .modes {
+        display: flex;
+        gap: 16px;
+        margin-top: 44px;
+      }
+      .modes span {
+        padding: 12px 22px;
+        color: #0b1120;
+        font-size: 28px;
+        font-weight: 700;
+        background: #7babff;
+        clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+      }
+      .score {
+        position: absolute;
+        right: 96px;
+        bottom: 24px;
+        font:
+          italic 300 220px/1 Outfit,
+          sans-serif;
+        color: #1d4ed8;
+      }
+      .score small {
+        font:
+          700 56px "LINE Seed JP",
+          sans-serif;
+        font-style: normal;
+        color: #171717;
+      }
+      .url {
+        position: absolute;
+        left: 80px;
+        bottom: 56px;
+        color: #4a5565;
+        font-size: 26px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="deco"></div>
+      <div class="band"></div>
+      <p class="ribbon">FLICK TYPING</p>
+      <h1>ふりっくタイピング</h1>
+      <p class="lead">フリック入力だけで遊ぶ、スマホのタイピングゲーム</p>
+      <div class="modes"><span>60秒タイムアタック</span><span>今日の耐久</span></div>
+      <div class="score">123<small>字</small></div>
+      <p class="url">flicktypinggame.xyzack271.com</p>
+    </div>
+  </body>
+</html>
