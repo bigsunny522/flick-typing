@@ -15,7 +15,7 @@
 | ランキングに載る記録       | **「載せる」を押した記録だけ。** 今は送った結果がすべて自動で載るが、これをやめる。押さなかった記録は載らない(集計ページの集計には今までどおり入る) |
 | 今までの記録               | 載せない(`ranked = 0`)。本番の `main` にはまだランキングを出していないので、困る人はいない                                                          |
 | ポップアップを出すとき     | その記録を載せると、今期(今週 / 今日)か歴代のどちらかで **100位以内** に入り、しかも **自分の載っている記録より良い** とき                          |
-| 名前を付けていない人       | 「名前を付けて載せる」で名前の入力欄を開く。名前を決めたら記録を載せ、ランキング画面に移る                                                          |
+| 名前を付けていない人       | 「載せる」で記録を載せてランキング画面に移り、ランキング画面の上にニックネーム登録の入力欄を出す(段階C で変更。もとは結果画面で名前を聞いていた)    |
 | 名前を付けている人         | 「載せる」で記録を載せ、ランキング画面に移る                                                                                                        |
 | ランキングの一覧           | 上位 50 人から **上位 100 人** に増やす                                                                                                             |
 | プレイ画面のテーマ切り替え | 足さない                                                                                                                                            |
@@ -26,10 +26,11 @@
 
 実装担当には、次の2回に分けて渡す。各段階の終わりで確認コマンドをすべて通す。
 
-| 段階 | 内容                                                      | 主なファイル                                                               |
-| ---- | --------------------------------------------------------- | -------------------------------------------------------------------------- |
-| A    | 型・判定の関数・Worker・D1                                | `src/ranking/**`、`tests/**`、`worker/**`、`migrations/0003_ranked.sql`    |
-| B    | 画面(ポップアップ・結果画面・名前の入力・集計ページ・CSS) | `src/screens/**`、`src/main.ts`、`src/stats-page/main.ts`、`src/style.css` |
+| 段階 | 内容                                                      | 主なファイル                                                                                 |
+| ---- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| A    | 型・判定の関数・Worker・D1                                | `src/ranking/**`、`tests/**`、`worker/**`、`migrations/0003_ranked.sql`                      |
+| B    | 画面(ポップアップ・結果画面・名前の入力・集計ページ・CSS) | `src/screens/**`、`src/main.ts`、`src/stats-page/main.ts`、`src/style.css`                   |
+| C    | 名前を聞く場所をランキング画面に移す(15 を参照)           | `src/screens/rank-offer.ts`、`result.ts`、`endurance-result.ts`、`ranking.ts`、`src/main.ts` |
 
 ## 変更対象
 
@@ -51,6 +52,8 @@
   - `src/main.ts` — 結果画面から開くランキングの種目を引数で受け取る
   - `src/stats-page/main.ts` — 右上の模様と切り替え
   - `src/style.css`、`src/stats-page/stats.css`
+- 段階C
+  - `src/screens/rank-offer.ts`、`src/screens/result.ts`、`src/screens/endurance-result.ts`、`src/screens/ranking.ts`、`src/main.ts`
 
 触らないファイル:
 
@@ -264,6 +267,40 @@ iPhone の Safari は `<button>` と `<input>` に角丸や内側の影を付け
 - `:is(html, body):has(.rank-offer)` も `.name-form` と同じく `touch-action: auto` に戻す
 - 色は既存の CSS 変数だけを使う(`#` で始まる色を書かない)
 
+### 15. 段階C: 名前はランキング画面に移ってから聞く
+
+オーナーの要望(段階B を見たあと): 「載せる」を押したら画面を移し、そこでニックネームを登録するポップアップを出す。名前を登録済みの人には出さない。
+
+9 の「名前を付けて載せる」の流れを、次のとおり置き換える。
+
+ポップアップ(`rank-offer.ts`):
+
+- ボタンは名前の有無によらず「載せる」(`primary-button`)・「載せない」(`secondary-button`)
+- 問いかけの文: 名前が未設定なら「ランキングに載せますか?」、設定済みなら今のまま「『○○』で載せますか?」
+- 「載せる」は名前の有無によらず、すぐ `POST /api/ranking/entry` を送る(9 の送信と同じ)。`rank-offer.ts` からは `openNameForm` を呼ばない(import も消す)
+- 200 のとき: オーバーレイを閉じ、`onOpenRanking(移る先, loadName() === null)` を呼ぶ。2つ目の引数が「ランキング画面で名前を聞くか」
+- 失敗したときは今と同じ(エラーを出し、ボタンを戻し、閉じない)
+- `onOpenRanking` の型は `(board: RankingBoard, askName: boolean) => void`
+
+結果画面(`result.ts`、`endurance-result.ts`):
+
+- `onRanking` の型を `(board: RankingBoard, askName: boolean) => void` に変える
+- 「ランキング」ボタンは `onRanking(今と同じボード, false)`
+- `showResultRank` の `onRanking` もこの型にする
+
+`main.ts`:
+
+- `openRanking(board: RankingBoard, askName = false)` にして、`renderRanking(root, board, showTitle, askName)` を呼ぶ
+- 結果画面に渡すのは `(board, askName) => openRanking(board, askName)`。タイトル画面からは今のまま(名前は聞かない)
+
+ランキング画面(`ranking.ts`):
+
+- `renderRanking` に4つ目の引数 `askName = false` を足す
+- `askName` が true なら、画面を作って一覧の読み込みを始めたあとに `openNameForm(host, null, onDone, "ニックネームを登録")` を開く
+  - `onDone` は「名前を変える」ボタンのものと同じ(名前の行を書き換えて `load()` し直す)。同じ処理を2か所に書かず、関数にまとめる
+  - 「やめる」を押したら閉じるだけ。記録はすでに載っているので、一覧には「名無しさん」で出る
+- `askName` が false のときは今と何も変わらない
+
 ## 受け入れ条件
 
 段階A:
@@ -290,6 +327,16 @@ iPhone の Safari は `<button>` と `<input>` に角丸や内側の影を付け
   - 自分の載せた記録より悪い記録では、ポップアップが出ない
   - 集計ページの右上をタップすると色が変わり、ゲームに戻っても残る
   - 名前の入力欄・ランキング画面のボタンの見た目(角・高さ・フォーカスの枠)
+
+段階C:
+
+- [ ] 上の5つのコマンドが通る
+- [ ] `grep -n "openNameForm\|名前を付けて載せる" src/screens/rank-offer.ts` が何も出さない
+- [ ] `grep -n "ニックネームを登録" src/screens/ranking.ts` が1行出る
+- [ ] 以下は Claude Code がブラウザで確かめる(実装担当は不要)
+  - 名前なしで「載せる」→ ランキング画面に移り、その上に「ニックネームを登録」の入力欄が出る。決めると一覧の自分の名前が変わる。「やめる」で閉じると「名無しさん」のまま
+  - 名前ありで「載せる」→ ランキング画面に移るだけで、入力欄は出ない
+  - 結果画面の「ランキング」ボタン、タイトル画面の「ランキング」からは入力欄が出ない
 
 ## 対象外
 
