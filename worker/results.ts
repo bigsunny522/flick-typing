@@ -1,6 +1,8 @@
+import type { Ranks, ResultsResponse } from "../src/ranking/types";
 import { validatePayload, type ResultPayload } from "../src/stats/payload";
 import { jstDateKey } from "../src/stats/summary";
 import type { Env } from "./index";
+import { resultRanks } from "./ranking";
 
 const MAX_BODY_BYTES = 2048;
 
@@ -22,7 +24,14 @@ export async function handleResults(request: Request, env: Env): Promise<Respons
   } catch {
     return new Response(null, { status: 500 });
   }
-  return new Response(null, { status: 204 });
+  let ranks: Ranks | null = null;
+  try {
+    ranks = await resultRanks(env, result.payload, Date.now());
+  } catch {
+    ranks = null;
+  }
+  const response: ResultsResponse = { ranks };
+  return Response.json(response);
 }
 
 async function insertResult(env: Env, payload: ResultPayload): Promise<void> {
