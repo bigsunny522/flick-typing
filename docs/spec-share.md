@@ -93,7 +93,7 @@ export function imageFileName(date: Date): string;
 - タイムアタック・耐久(完走でない): `(今週{rank}位)` / `(今日{rank}位)` を足す
 - 耐久(完走): 括弧の中に足して `({correct}字・今日{rank}位)` にする
 
-文字は全角を使う: `!`(U+FF01)、`(`(U+FF08)、`)`(U+FF09)、`・`(U+30FB)、`「」`。
+`!` `(` `)` は半角(表の文字のまま。結果画面の「完走!」と同じ)。`・`(U+30FB)と `「」` は全角。
 
 `xIntentUrl(text)` は `https://x.com/intent/post?text=<encodeURIComponent(text)>&url=<encodeURIComponent(SITE_URL)>`。
 
