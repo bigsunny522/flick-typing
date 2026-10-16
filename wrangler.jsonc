@@ -23,6 +23,8 @@
     { "name": "RL_NAME", "namespace_id": "52202", "simple": { "limit": 5, "period": 60 } },
     { "name": "RL_READ", "namespace_id": "52203", "simple": { "limit": 120, "period": 60 } },
   ],
+  // Workers Logs(ダッシュボードの Observability)。docs/operations.md の「ログ」
+  "observability": { "enabled": true },
   // main 以外のブランチは Workers Builds が `npx wrangler preview` でプレビューを作る。
   // プレビューの結果が本番のランキング・集計に混ざらないよう、別の D1 を使う。
   "previews": {
