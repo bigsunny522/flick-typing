@@ -142,7 +142,7 @@ export function renderRanking(
 }
 
 function kindOf(kind: string | undefined): Kind {
-  return kind === "endurance" ? "endurance" : "timeattack";
+  return kind?.startsWith("endurance") ? "endurance" : "timeattack";
 }
 
 function isAlltime(board: RankingBoard): boolean {
