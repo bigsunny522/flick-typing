@@ -1,5 +1,7 @@
 import type { EnduranceEnd } from "../game/endurance";
 import type { RankingBoard, ResultsResponse } from "../ranking/types";
+import { bindShare } from "../share/bind";
+import type { ShareSource } from "../share/text";
 import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 import { showResultRank } from "./rank-offer";
@@ -29,6 +31,15 @@ export function renderEnduranceResult(
   const bestRibbon = values.bestUpdated
     ? '<p class="ribbon accent-ribbon">今日のベスト更新</p>'
     : "";
+  const source: ShareSource = {
+    kind: "endurance",
+    correct: values.correct,
+    title: values.title,
+    author: values.author,
+    progress: values.progress,
+    complete: values.end === "complete",
+    bestUpdated: values.bestUpdated,
+  };
   host.innerHTML =
     `<main class="screen result-screen endurance-result">` +
     `<div class="deco" aria-hidden="true"></div>` +
@@ -46,8 +57,15 @@ export function renderEnduranceResult(
     `<div class="result-actions">` +
     `<button id="again" class="primary-button">もう一度</button>` +
     saveButton +
+    `<div class="result-actions-row">` +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
     `<button id="ranking" class="secondary-button">ランキング</button>` +
+    `</div>` +
+    `<div class="result-actions-row">` +
+    `<a id="share-x" class="secondary-button" target="_blank" rel="noopener noreferrer">` +
+    `X でシェア</a>` +
+    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
+    `</div>` +
     `</div>` +
     `<p class="endurance-source">` +
     `<a href="${values.cardUrl}" target="_blank" rel="noopener">出典: 青空文庫</a>` +
@@ -61,6 +79,7 @@ export function renderEnduranceResult(
     ?.addEventListener("click", () => onRanking("endurance-daily", false));
   showResultRank(host, rank, { kind: "endurance", periodLabel: "今日", onRanking });
   bindThemeTap(host);
+  bindShare(host, source, rank);
 }
 
 function endReason(values: EnduranceResultValues): string {

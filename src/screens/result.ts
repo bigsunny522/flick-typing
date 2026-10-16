@@ -1,4 +1,6 @@
 import type { RankingBoard, ResultsResponse } from "../ranking/types";
+import { bindShare } from "../share/bind";
+import type { ShareSource } from "../share/text";
 import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 import { showResultRank } from "./rank-offer";
@@ -31,6 +33,15 @@ export function renderResult(
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
   const ribbon = values.perfect ? '<p class="ribbon perfect-ribbon">PERFECT</p>' : "";
   const confetti = values.perfect && !prefersReducedMotion() ? confettiMarkup() : "";
+  const source: ShareSource = {
+    kind: "timeattack",
+    correct: values.correct,
+    miss: values.miss,
+    maxCombo: values.maxCombo,
+    endTimeMs: values.endTimeMs,
+    perfect: values.perfect,
+    bestUpdated: values.bestUpdated,
+  };
   host.innerHTML =
     `<main class="screen result-screen">${confetti}` +
     `<div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">RESULT</p>` +
@@ -41,8 +52,15 @@ export function renderResult(
     `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
     `<p class="duration">プレイ時間 ${(values.endTimeMs / 1000).toFixed(1)}秒(ボーナス +${((values.endTimeMs - 60000) / 1000).toFixed(1)}秒)</p>` +
     `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}` +
+    `<div class="result-actions-row">` +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
-    `<button id="ranking" class="secondary-button">ランキング</button></div></main>`;
+    `<button id="ranking" class="secondary-button">ランキング</button>` +
+    `</div>` +
+    `<div class="result-actions-row">` +
+    `<a id="share-x" class="secondary-button" target="_blank" rel="noopener noreferrer">` +
+    `X でシェア</a>` +
+    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
+    `</div></div></main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
@@ -51,6 +69,7 @@ export function renderResult(
     ?.addEventListener("click", () => onRanking("timeattack-weekly", false));
   showResultRank(host, rank, { kind: "timeattack", periodLabel: "今週", onRanking });
   bindThemeTap(host);
+  bindShare(host, source, rank);
   removeConfettiLater(host);
 }
 

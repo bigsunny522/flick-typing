@@ -786,6 +786,20 @@ button {
   gap: 10px;
   margin-top: auto;
 }
+.result-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+a.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.secondary-button:disabled {
+  opacity: 0.5;
+}
 .result-screen .endurance-reason {
   margin: 8px 0 0;
   color: var(--fg);
