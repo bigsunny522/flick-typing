@@ -1,3 +1,4 @@
+import { aboutHtml } from "../about";
 import { DEFAULT_NAME } from "../ranking/name";
 import type { RankingBoard, RankingEntry, RankingResponse } from "../ranking/types";
 import { loadName, loadPlayerId } from "../storage";
@@ -37,6 +38,7 @@ const SHELL =
   `<div class="ranking-actions">` +
   `<button type="button" id="ranking-back" class="secondary-button">戻る</button>` +
   `</div>` +
+  aboutHtml() +
   `</main>`;
 
 /** ランキング画面。`initialBoard` で開き、戻るときは `onBack()` を呼ぶ */

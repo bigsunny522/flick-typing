@@ -13,7 +13,7 @@ const SHELL =
   `<p class="name-form-title"></p>` +
   `<input type="text" id="name-input" maxlength="20" autocomplete="off" autocapitalize="off"` +
   ` spellcheck="false" enterkeyhint="done">` +
-  `<p class="name-form-hint">10文字まで。記号・絵文字は使えません</p>` +
+  `<p class="name-form-hint">10文字まで。記号・絵文字は使えません。ランキングでだれでも見られます</p>` +
   `<p class="name-form-error" role="alert"></p>` +
   `<div class="name-form-actions">` +
   `<button type="submit" id="name-ok" class="primary-button">決める</button>` +

@@ -1,5 +1,6 @@
 import "../style.css";
 import "./stats.css";
+import { aboutHtml } from "../about";
 import { PASSAGES } from "../game/endurance";
 import type { PlayMode } from "../game/mode";
 import { loadBest, loadEnduranceBest, loadMode, loadTheme } from "../storage";
@@ -38,7 +39,9 @@ function shell(body: string): string {
     `<main class="screen stats-screen">` +
     `<div class="deco" aria-hidden="true"></div>` +
     `<button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button>` +
-    `${backLink()}<h1>みんなの記録</h1>${body}</main>`
+    `${backLink()}<h1>みんなの記録</h1>${body}` +
+    aboutHtml() +
+    `</main>`
   );
 }
 

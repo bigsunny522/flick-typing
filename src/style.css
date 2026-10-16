@@ -1151,6 +1151,27 @@ button {
   margin-top: auto;
   padding-top: 24px;
 }
+.about {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.about summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--fg);
+  font-size: 13px;
+}
+.about ul {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+.about a {
+  color: var(--primary-strong);
+}
 .name-form {
   position: fixed;
   inset: 0;

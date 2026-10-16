@@ -45,6 +45,26 @@ describe("checkName", () => {
   it("NG(大文字・区切り)", () => {
     expect(checkName("F-U-C-K")).toEqual({ ok: false, error: "ng" });
   });
+
+  it("NG(漢字)", () => {
+    expect(checkName("死ね")).toEqual({ ok: false, error: "ng" });
+  });
+
+  it("NG(漢字・前に文字がある)", () => {
+    expect(checkName("お前死ね")).toEqual({ ok: false, error: "ng" });
+  });
+
+  it("NG(漢字・後ろに文字がある)", () => {
+    expect(checkName("殺すぞ")).toEqual({ ok: false, error: "ng" });
+  });
+
+  it("NG(1文字の言葉)", () => {
+    expect(checkName("糞野郎")).toEqual({ ok: false, error: "ng" });
+  });
+
+  it("似た字を含むが NG ではない", () => {
+    expect(checkName("変身ヒーロー")).toEqual({ ok: true, name: "変身ヒーロー" });
+  });
 });
 
 describe("DEFAULT_NAME", () => {
