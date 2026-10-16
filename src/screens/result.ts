@@ -1,4 +1,5 @@
-import type { PlayMode } from "../storage";
+import type { ResultsResponse } from "../ranking/types";
+import { loadName, type PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 
 export type ResultValues = {
@@ -19,6 +20,8 @@ export function renderResult(
   values: ResultValues,
   onAgain: () => void,
   onTitle: () => void,
+  rank: Promise<ResultsResponse | null>,
+  onRanking: () => void,
   onSave?: () => void,
 ): void {
   const total = values.correct + values.miss;
@@ -31,16 +34,38 @@ export function renderResult(
     `<main class="screen result-screen">${confetti}` +
     `<div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">RESULT</p>` +
     `${ribbon}<p class="result-label">正しく打てた文字数</p><div class="score">${values.correct}<small>字</small></div>` +
+    `<p class="result-rank"></p>` +
     `${values.bestUpdated ? '<p class="ribbon accent-ribbon">自己ベスト更新</p>' : ""}<div class="result-grid">` +
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
     `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
     `<p class="duration">プレイ時間 ${(values.endTimeMs / 1000).toFixed(1)}秒(ボーナス +${((values.endTimeMs - 60000) / 1000).toFixed(1)}秒)</p>` +
-    `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}<button id="title" class="secondary-button">タイトルへ</button></div></main>`;
+    `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}` +
+    `<button id="title" class="secondary-button">タイトルへ</button>` +
+    `<button id="ranking" class="secondary-button">ランキング</button></div></main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
+  host.querySelector<HTMLButtonElement>("#ranking")?.addEventListener("click", onRanking);
+  showRank(host, rank, "今週");
   bindThemeTap(host);
   removeConfettiLater(host);
+}
+
+/** 送信の返事が来たら順位を書く。画面が替わっていても何もしない */
+function showRank(host: HTMLElement, rank: Promise<ResultsResponse | null>, period: string): void {
+  const line = host.querySelector(".result-rank");
+  if (!line) return;
+  void rank.then((response) => {
+    const ranks = response?.ranks;
+    if (!line.isConnected || !ranks) return;
+    if (typeof ranks.period !== "number" || typeof ranks.alltime !== "number") return;
+    line.textContent = `${period} ${ranks.period}位 ・ 歴代 ${ranks.alltime}位`;
+    if (loadName() !== null) return;
+    const hint = document.createElement("p");
+    hint.className = "result-rank-hint";
+    hint.textContent = "名前を付けるとランキングに名前が出ます";
+    line.after(hint);
+  });
 }
 
 function prefersReducedMotion(): boolean {

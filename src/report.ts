@@ -1,12 +1,22 @@
+import type { ResultsResponse } from "./ranking/types";
 import type { ResultPayload } from "./stats/payload";
 
-export function reportResult(payload: ResultPayload, debug: boolean): void {
-  if (debug) return;
-  if (import.meta.env.DEV) return;
-  fetch("/api/results", {
+/** 結果を送り、返ってきた順位を受け取る。送れなかったときは null */
+export function reportResult(
+  payload: ResultPayload,
+  debug: boolean,
+): Promise<ResultsResponse | null> {
+  if (debug) return Promise.resolve(null);
+  if (import.meta.env.DEV) return Promise.resolve(null);
+  return fetch("/api/results", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     keepalive: true,
-  }).catch(() => {});
+  })
+    .then(async (response) => {
+      if (response.status !== 200) return null;
+      return (await response.json()) as ResultsResponse;
+    })
+    .catch(() => null);
 }

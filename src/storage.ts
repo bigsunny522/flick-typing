@@ -13,6 +13,7 @@ const ENDURANCE_BEST_KEYS: Record<PlayMode, string> = {
 };
 const MODE_KEY = "flick-typing:mode:v1";
 const THEME_KEY = "flick-typing:theme:v1";
+const NAME_KEY = "flick-typing:name:v1";
 const PLAYER_KEY = "flick-typing:player:v1";
 const PLAYER_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 let cachedPlayerId: string | null = null;
@@ -102,5 +103,20 @@ export function loadPlayerId(): string {
   } catch {
     cachedPlayerId = createPlayerId();
     return cachedPlayerId;
+  }
+}
+/** 端末に保存したニックネーム(表示用)。正しくはサーバーの players にある */
+export function loadName(): string | null {
+  try {
+    return localStorage.getItem(NAME_KEY);
+  } catch {
+    return null;
+  }
+}
+export function saveName(name: string) {
+  try {
+    localStorage.setItem(NAME_KEY, name);
+  } catch {
+    /* storage is optional */
   }
 }

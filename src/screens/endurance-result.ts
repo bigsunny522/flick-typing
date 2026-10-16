@@ -1,5 +1,6 @@
 import type { EnduranceEnd } from "../game/endurance";
-import type { PlayMode } from "../storage";
+import type { ResultsResponse } from "../ranking/types";
+import { loadName, type PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 
 export type EnduranceResultValues = {
@@ -19,6 +20,8 @@ export function renderEnduranceResult(
   values: EnduranceResultValues,
   onAgain: () => void,
   onTitle: () => void,
+  rank: Promise<ResultsResponse | null>,
+  onRanking: () => void,
   onSave?: () => void,
 ): void {
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
@@ -32,6 +35,7 @@ export function renderEnduranceResult(
     `<p class="ribbon">RESULT</p>` +
     `<p class="result-label">打てた文字数</p>` +
     `<div class="score">${values.correct}<small>字</small></div>` +
+    `<p class="result-rank"></p>` +
     `<p class="endurance-reason">${endReason(values)}</p>` +
     bestRibbon +
     `<div class="result-grid">` +
@@ -42,6 +46,7 @@ export function renderEnduranceResult(
     `<button id="again" class="primary-button">もう一度</button>` +
     saveButton +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
+    `<button id="ranking" class="secondary-button">ランキング</button>` +
     `</div>` +
     `<p class="endurance-source">` +
     `<a href="${values.cardUrl}" target="_blank" rel="noopener">出典: 青空文庫</a>` +
@@ -50,7 +55,26 @@ export function renderEnduranceResult(
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
+  host.querySelector<HTMLButtonElement>("#ranking")?.addEventListener("click", onRanking);
+  showRank(host, rank, "今日");
   bindThemeTap(host);
+}
+
+/** 送信の返事が来たら順位を書く。画面が替わっていても何もしない */
+function showRank(host: HTMLElement, rank: Promise<ResultsResponse | null>, period: string): void {
+  const line = host.querySelector(".result-rank");
+  if (!line) return;
+  void rank.then((response) => {
+    const ranks = response?.ranks;
+    if (!line.isConnected || !ranks) return;
+    if (typeof ranks.period !== "number" || typeof ranks.alltime !== "number") return;
+    line.textContent = `${period} ${ranks.period}位 ・ 歴代 ${ranks.alltime}位`;
+    if (loadName() !== null) return;
+    const hint = document.createElement("p");
+    hint.className = "result-rank-hint";
+    hint.textContent = "名前を付けるとランキングに名前が出ます";
+    line.after(hint);
+  });
 }
 
 function endReason(values: EnduranceResultValues): string {

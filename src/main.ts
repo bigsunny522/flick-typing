@@ -14,6 +14,8 @@ import { renderResult } from "./screens/result";
 import { renderTitle } from "./screens/title";
 import { renderEndurance } from "./screens/endurance";
 import { renderEnduranceResult } from "./screens/endurance-result";
+import { renderRanking } from "./screens/ranking";
+import type { RankingBoard } from "./ranking/types";
 import {
   loadBest,
   loadEnduranceBest,
@@ -56,7 +58,13 @@ function showTitle(): void {
       loadBest: (mode) => loadEnduranceBest(mode, dateKey)?.correct ?? null,
     },
     startEndurance,
+    () => openRanking("timeattack-weekly"),
   );
+}
+
+/** ランキング画面を開く。戻るときはタイトルに戻る */
+function openRanking(board: RankingBoard): void {
+  renderRanking(root, board, showTitle);
 }
 
 function startGame(mode: PlayMode): void {
@@ -82,7 +90,7 @@ function startGame(mode: PlayMode): void {
           cps,
           date: new Date().toISOString(),
         });
-      reportResult(
+      const rank = reportResult(
         {
           kind: "timeattack",
           playerId: loadPlayerId(),
@@ -115,7 +123,15 @@ function startGame(mode: PlayMode): void {
               debug,
             })
         : undefined;
-      renderResult(root, result, () => startGame(mode), showTitle, save);
+      renderResult(
+        root,
+        result,
+        () => startGame(mode),
+        showTitle,
+        rank,
+        () => openRanking("timeattack-weekly"),
+        save,
+      );
     },
   });
 }
@@ -144,7 +160,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
           date: new Date().toISOString(),
         });
       }
-      reportResult(
+      const rank = reportResult(
         {
           kind: "endurance",
           playerId: loadPlayerId(),
@@ -181,6 +197,8 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
         values,
         () => startEnduranceRound(mode, dateKey),
         showTitle,
+        rank,
+        () => openRanking("endurance-daily"),
         save,
       );
     },

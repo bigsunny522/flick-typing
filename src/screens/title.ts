@@ -18,6 +18,7 @@ export function renderTitle(
   onStart: (mode: PlayMode) => void,
   endurance: TitleEndurance,
   onStartEndurance: (mode: PlayMode) => void,
+  onRanking: () => void,
 ): void {
   const best = loadBestFor("native");
   const enduranceBest = endurance.loadBest("native");
@@ -51,6 +52,7 @@ export function renderTitle(
     `<button id="start-endurance" class="secondary-button">挑戦する</button>` +
     `</section>` +
     `</div>` +
+    `<button id="ranking" class="secondary-button title-ranking">ランキング</button>` +
     `</div>` +
     `</main>`;
   host
@@ -59,5 +61,6 @@ export function renderTitle(
   host
     .querySelector<HTMLButtonElement>("#start-endurance")
     ?.addEventListener("click", () => onStartEndurance("native"));
+  host.querySelector<HTMLButtonElement>("#ranking")?.addEventListener("click", onRanking);
   bindThemeTap(host);
 }
