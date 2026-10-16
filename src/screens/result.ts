@@ -30,7 +30,6 @@ export function renderResult(
   host.innerHTML =
     `<main class="screen result-screen">${confetti}` +
     `<div class="deco" aria-hidden="true"></div><button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button><p class="ribbon">RESULT</p>` +
-    `<p class="result-mode">${modeLabel(values.mode)}</p>` +
     `${ribbon}<p class="result-label">正しく打てた文字数</p><div class="score">${values.correct}<small>字</small></div>` +
     `${values.bestUpdated ? '<p class="ribbon accent-ribbon">自己ベスト更新</p>' : ""}<div class="result-grid">` +
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
@@ -72,8 +71,4 @@ function removeConfettiLater(host: HTMLElement): void {
   const confetti = host.querySelector(".confetti");
   if (!confetti) return;
   window.setTimeout(() => confetti.remove(), CONFETTI_LIFETIME_MS);
-}
-
-function modeLabel(mode: PlayMode): string {
-  return mode === "native" ? "スマホのキーボード" : "フリックキーボード";
 }

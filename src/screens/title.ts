@@ -1,12 +1,7 @@
-import { saveMode, type Best, type PlayMode } from "../storage";
+import type { Best, PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 import type { EnvVerdict } from "../anticheat/env";
 
-const MODE_ORDER: PlayMode[] = ["flick", "native"];
-const MODE_LABEL: Record<PlayMode, string> = {
-  flick: "フリックキーボード",
-  native: "スマホのキーボード",
-};
 const NATIVE_HINT = "フリック入力で打ってください(トグル入力は使えません)";
 
 export type TitleEndurance = {
@@ -17,7 +12,6 @@ export type TitleEndurance = {
 
 export function renderTitle(
   host: HTMLElement,
-  mode: PlayMode,
   loadBestFor: (mode: PlayMode) => Best | null,
   verdict: EnvVerdict,
   debug: boolean,
@@ -25,13 +19,8 @@ export function renderTitle(
   endurance: TitleEndurance,
   onStartEndurance: (mode: PlayMode) => void,
 ): void {
-  let current = mode;
-  const modeButtonsHtml = MODE_ORDER.map(
-    (item) =>
-      `<button type="button" data-mode="${item}" aria-pressed="${String(item === mode)}">${MODE_LABEL[item]}</button>`,
-  ).join("");
-  const best = loadBestFor(mode);
-  const enduranceBest = endurance.loadBest(mode);
+  const best = loadBestFor("native");
+  const enduranceBest = endurance.loadBest("native");
   host.innerHTML =
     `<main class="screen title-screen">` +
     `<div class="deco" aria-hidden="true"></div>` +
@@ -41,8 +30,7 @@ export function renderTitle(
     `<p class="intro">フリックだけで打つタイピング。</p>` +
     `${debug ? `<pre class="debug">${verdict.kind}: ${verdict.reasons.join(", ")}</pre>` : ""}` +
     `<div class="title-actions">` +
-    `<div class="mode-select">${modeButtonsHtml}</div>` +
-    `<p class="native-hint"${mode === "native" ? "" : " hidden"}>${NATIVE_HINT}</p>` +
+    `<p class="native-hint">${NATIVE_HINT}</p>` +
     `<div class="game-cards">` +
     `<section class="game-card">` +
     `<p class="game-card-label">タイムアタック</p>` +
@@ -65,32 +53,11 @@ export function renderTitle(
     `</div>` +
     `</div>` +
     `</main>`;
-  const bestValue = host.querySelector<HTMLElement>("#best-value")!;
-  const enduranceBestValue = host.querySelector<HTMLElement>("#endurance-best-value")!;
-  const hint = host.querySelector<HTMLElement>(".native-hint")!;
-  const buttons = host.querySelectorAll<HTMLButtonElement>(".mode-select button");
-  const select = (next: PlayMode) => {
-    current = next;
-    saveMode(next);
-    buttons.forEach((button) =>
-      button.setAttribute("aria-pressed", String(button.dataset.mode === next)),
-    );
-    const nextBest = loadBestFor(next);
-    bestValue.textContent = nextBest ? String(nextBest.correct) : "—";
-    enduranceBestValue.textContent = String(endurance.loadBest(next) ?? "—");
-    hint.hidden = next !== "native";
-  };
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const next = button.dataset.mode;
-      if (next === "flick" || next === "native") select(next);
-    });
-  });
   host
     .querySelector<HTMLButtonElement>("#start")
-    ?.addEventListener("click", () => onStart(current));
+    ?.addEventListener("click", () => onStart("native"));
   host
     .querySelector<HTMLButtonElement>("#start-endurance")
-    ?.addEventListener("click", () => onStartEndurance(current));
+    ?.addEventListener("click", () => onStartEndurance("native"));
   bindThemeTap(host);
 }

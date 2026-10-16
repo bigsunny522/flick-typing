@@ -30,7 +30,6 @@ export function renderEnduranceResult(
     `<div class="deco" aria-hidden="true"></div>` +
     `<button type="button" class="theme-tap" aria-label="テーマカラーを変える"></button>` +
     `<p class="ribbon">RESULT</p>` +
-    `<p class="result-mode">${modeLabel(values.mode)}</p>` +
     `<p class="result-label">打てた文字数</p>` +
     `<div class="score">${values.correct}<small>字</small></div>` +
     `<p class="endurance-reason">${endReason(values)}</p>` +
@@ -63,8 +62,4 @@ function endReason(values: EnduranceResultValues): string {
     return `「${miss.expected}」を打つところで使えない入力(変換・貼り付けなど)`;
   }
   return `「${miss.expected}」を打つところで「${miss.typed}」を入力`;
-}
-
-function modeLabel(mode: PlayMode): string {
-  return mode === "native" ? "スマホのキーボード" : "フリックキーボード";
 }

@@ -17,7 +17,6 @@ import { renderEnduranceResult } from "./screens/endurance-result";
 import {
   loadBest,
   loadEnduranceBest,
-  loadMode,
   loadPlayerId,
   loadTheme,
   saveBest,
@@ -47,7 +46,6 @@ function showTitle(): void {
   const passage = passageFor(dateKey, PASSAGES);
   renderTitle(
     root,
-    loadMode(),
     loadBest,
     verdict,
     debug,
