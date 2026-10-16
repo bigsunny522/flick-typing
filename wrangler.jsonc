@@ -16,6 +16,13 @@
       "database_id": "3ad7a4e4-2c47-4a55-bc55-b05a5b46458c",
     },
   ],
+  // API の回数制限(docs/spec-launch-hardening.md)。key は接続元の IP。period は 10 か 60 だけ。
+  // namespace_id はアカウント内で数を共有する単位なので、ほかの Worker と同じ値にしない。
+  "ratelimits": [
+    { "name": "RL_WRITE", "namespace_id": "52201", "simple": { "limit": 20, "period": 60 } },
+    { "name": "RL_NAME", "namespace_id": "52202", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RL_READ", "namespace_id": "52203", "simple": { "limit": 120, "period": 60 } },
+  ],
   // main 以外のブランチは Workers Builds が `npx wrangler preview` でプレビューを作る。
   // プレビューの結果が本番のランキング・集計に混ざらないよう、別の D1 を使う。
   "previews": {
