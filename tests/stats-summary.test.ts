@@ -5,6 +5,7 @@ import {
   histogram,
   jstDateKey,
   previousDateKey,
+  rankLabel,
   rankOf,
   summarizeEndurance,
   summarizeTimeAttack,
@@ -230,6 +231,40 @@ describe("rankOf", () => {
 
   it("列にない値でも順位を返す", () => {
     expect(rankOf([40, 30, 20, 10], 50)).toBe(1);
+  });
+});
+
+describe("rankLabel", () => {
+  it("1 位は「1位」", () => {
+    expect(rankLabel(1)).toBe("1位");
+  });
+
+  it("100 位は「100位」", () => {
+    expect(rankLabel(100)).toBe("100位");
+  });
+
+  it("101 位は TOP200", () => {
+    expect(rankLabel(101)).toBe("TOP200");
+  });
+
+  it("200 位は TOP200", () => {
+    expect(rankLabel(200)).toBe("TOP200");
+  });
+
+  it("201 位は TOP500", () => {
+    expect(rankLabel(201)).toBe("TOP500");
+  });
+
+  it("501 位は TOP1000", () => {
+    expect(rankLabel(501)).toBe("TOP1000");
+  });
+
+  it("1001 位は TOP2000", () => {
+    expect(rankLabel(1001)).toBe("TOP2000");
+  });
+
+  it("12000 位は TOP20000", () => {
+    expect(rankLabel(12000)).toBe("TOP20000");
   });
 });
 

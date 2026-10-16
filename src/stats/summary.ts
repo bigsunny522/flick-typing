@@ -151,6 +151,17 @@ export function rankOf(values: number[], mine: number): number | null {
   return greater + 1;
 }
 
+/** 順位の表示。1〜100 位は「○位」、それより下は rank 以上で最小の区切りを「TOP○」で出す */
+export function rankLabel(rank: number): string {
+  if (rank <= 100) return `${rank}位`;
+  for (let scale = 100; ; scale *= 10) {
+    for (const base of [2, 5, 10]) {
+      const bucket = base * scale;
+      if (bucket >= rank) return `TOP${bucket}`;
+    }
+  }
+}
+
 /** 自分の値が上位何%か。values が空なら null */
 export function topPercent(values: number[], mine: number): number | null {
   if (values.length === 0) return null;
