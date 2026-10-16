@@ -1,6 +1,7 @@
 import type { EnduranceEnd } from "../game/endurance";
 import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
+import { rankSlotHtml } from "./result-rank";
 
 export type EnduranceResultValues = {
   correct: number;
@@ -39,6 +40,7 @@ export function renderEnduranceResult(
     `<p>作品<strong class="endurance-work">${values.title} / ${values.author}</strong></p>` +
     `<p>進んだ割合<strong>${values.progress}<small>%</small></strong></p>` +
     `</div>` +
+    rankSlotHtml() +
     `<div class="result-actions">` +
     `<button id="again" class="primary-button">もう一度</button>` +
     saveButton +

@@ -1,8 +1,32 @@
 import type { Passage } from "../game/endurance";
 
+const JST_OFFSET_MS = 9 * 3600000;
+const DAY_MS = 24 * 3600000;
+
 /** 日本時間の日付キー("2026-10-16")。src/main.ts の todayKey と同じ計算 */
 export function jstDateKey(nowMs: number): string {
-  return new Date(nowMs + 9 * 3600000).toISOString().slice(0, 10);
+  return new Date(nowMs + JST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** UTC の "YYYY-MM-DD HH:MM:SS"(D1 の datetime('now') と同じ形) */
+function utcStamp(ms: number): string {
+  const date = new Date(ms);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/** nowMs を含む週(日本時間の月曜 0:00 始まり)の始まりを、UTC の "YYYY-MM-DD HH:MM:SS" で返す */
+export function jstWeekStartUtc(nowMs: number): string {
+  const jst = new Date(nowMs + JST_OFFSET_MS);
+  const jstDayStart = Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate());
+  const daysSinceMonday = (jst.getUTCDay() + 6) % 7;
+  const weekStart = jstDayStart - daysSinceMonday * DAY_MS;
+  return utcStamp(weekStart - JST_OFFSET_MS);
 }
 
 /** 前日の日付キー */
@@ -144,13 +168,6 @@ export function endurancePlayBins(rows: EnduranceRow[], totalReading: number): E
   };
 }
 
-/** 自分の値の順位。自分より大きい値の数 + 1。同じ値は同じ順位。values が空なら null */
-export function rankOf(values: number[], mine: number): number | null {
-  if (values.length === 0) return null;
-  const greater = values.filter((value) => value > mine).length;
-  return greater + 1;
-}
-
 /** 順位の表示。1〜100 位は「○位」、それより下は rank 以上で最小の区切りを「TOP○」で出す */
 export function rankLabel(rank: number): string {
   if (rank <= 100) return `${rank}位`;
@@ -162,12 +179,26 @@ export function rankLabel(rank: number): string {
   }
 }
 
-/** 自分の値が上位何%か。values が空なら null */
-export function topPercent(values: number[], mine: number): number | null {
-  if (values.length === 0) return null;
-  const greater = values.filter((value) => value > mine).length;
-  const percent = Math.ceil((100 * (greater + 1)) / values.length);
-  return Math.min(100, Math.max(1, percent));
+export type RankResponse =
+  { kind: "timeattack"; week: number; all: number } | { kind: "endurance"; today: number };
+
+function isRank(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1;
+}
+
+/** /api/results のレスポンスの JSON を読む。形が違えば null */
+export function parseRankResponse(value: unknown): RankResponse | null {
+  if (typeof value !== "object" || value === null) return null;
+  const body = value as Record<string, unknown>;
+  if (body.kind === "timeattack") {
+    if (!isRank(body.week) || !isRank(body.all)) return null;
+    return { kind: "timeattack", week: body.week, all: body.all };
+  }
+  if (body.kind === "endurance") {
+    if (!isRank(body.today)) return null;
+    return { kind: "endurance", today: body.today };
+  }
+  return null;
 }
 
 export type TimeAttackSummary = ModeSummary<TimeAttackBest> & { all: TimeAttackPlayBins };

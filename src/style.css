@@ -810,6 +810,21 @@ button {
   font-size: 12px;
   font-weight: 700;
 }
+.result-rank {
+  margin: 16px 0 0;
+  color: var(--primary-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+.result-links {
+  margin: 6px 0 16px;
+  text-align: right;
+}
+.result-links a {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
 .result-actions {
   display: grid;
   gap: 10px;

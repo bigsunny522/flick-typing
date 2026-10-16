@@ -3,15 +3,7 @@ import "./stats.css";
 import { PASSAGES } from "../game/endurance";
 import type { PlayMode } from "../game/mode";
 import { loadBest, loadEnduranceBest, loadMode, loadTheme } from "../storage";
-import {
-  BIN,
-  histogram,
-  rankLabel,
-  rankOf,
-  type Bin,
-  type ModeSummary,
-  type StatsResponse,
-} from "../stats/summary";
+import { BIN, histogram, type Bin, type ModeSummary, type StatsResponse } from "../stats/summary";
 import { applyTheme, parseTheme } from "../theme";
 import { axisTicks } from "./chart";
 
@@ -117,7 +109,6 @@ function timeattackHtml(stats: StatsResponse, mode: PlayMode, view: View): strin
   const best = loadBest(mode);
   const correct = best?.correct ?? null;
   const corrects = summary.bests.map((row) => row.correct);
-  const rank = correct === null ? null : rankOf(corrects, correct);
   const unit = VIEW_UNIT[view];
   const charts =
     summary.players === 0
@@ -169,7 +160,6 @@ function timeattackHtml(stats: StatsResponse, mode: PlayMode, view: View): strin
     "タイムアタック",
     summary,
     bestLineHtml("あなたの自己ベスト", correct),
-    rank,
     charts,
   );
 }
@@ -178,7 +168,6 @@ function enduranceHtml(stats: StatsResponse, mode: PlayMode, view: View): string
   const summary = stats.endurance[mode];
   const best = loadEnduranceBest(mode, stats.endurance.dateKey);
   const correct = best?.correct ?? null;
-  const rank = correct === null ? null : rankOf(summary.bests, correct);
   const total = stats.endurance.totalReading;
   const passage = PASSAGES.find((item) => item.id === stats.endurance.passageId);
   const title = passage ? `耐久(今日の文章: ${passage.title})` : "耐久";
@@ -202,14 +191,13 @@ function enduranceHtml(stats: StatsResponse, mode: PlayMode, view: View): string
           },
           VIEW_UNIT[view],
         );
-  return sectionHtml(title, summary, bestLineHtml("あなたの今日の記録", correct), rank, charts);
+  return sectionHtml(title, summary, bestLineHtml("あなたの今日の記録", correct), charts);
 }
 
 function sectionHtml(
   title: string,
   summary: ModeSummary<unknown>,
   best: string,
-  rank: number | null,
   charts: string,
 ): string {
   return (
@@ -217,16 +205,9 @@ function sectionHtml(
     `<h2>${title}</h2>` +
     `<p class="stats-count">${summary.players}人・${summary.plays}プレイ</p>` +
     best +
-    rankLineHtml(rank) +
     charts +
     `</section>`
   );
-}
-
-/** 順位の行。順位が出ないときは空 */
-function rankLineHtml(rank: number | null): string {
-  if (rank === null) return "";
-  return `<p class="stats-top">${rankLabel(rank)}</p>`;
 }
 
 function bestLineHtml(label: string, correct: number | null): string {

@@ -14,6 +14,7 @@ import { renderResult } from "./screens/result";
 import { renderTitle } from "./screens/title";
 import { renderEndurance } from "./screens/endurance";
 import { renderEnduranceResult } from "./screens/endurance-result";
+import { fillRank } from "./screens/result-rank";
 import {
   loadBest,
   loadEnduranceBest,
@@ -25,7 +26,7 @@ import {
   type PlayMode,
 } from "./storage";
 import { reportResult } from "./report";
-import { jstDateKey, totalReading } from "./stats/summary";
+import { jstDateKey, totalReading, type RankResponse } from "./stats/summary";
 import { applyTheme, parseTheme } from "./theme";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -61,6 +62,17 @@ function showTitle(): void {
   );
 }
 
+/** 結果画面を描いた直後に取っておいた順位の行に、届いた順位を入れる */
+function showRankLater(rankPromise: Promise<RankResponse | null>): void {
+  const screen = root.querySelector<HTMLElement>("main");
+  const rankRow = root.querySelector<HTMLElement>(".result-rank");
+  void rankPromise.then((rank) => {
+    if (rank === null) return;
+    if (!rankRow?.isConnected || !screen?.isConnected) return;
+    fillRank(screen, rank);
+  });
+}
+
 function startGame(mode: PlayMode): void {
   const verdict = checkEnv(collectEnv());
   if (verdict.kind !== "ok" && !debug) return renderBlocked(root, verdict.kind);
@@ -84,7 +96,7 @@ function startGame(mode: PlayMode): void {
           cps,
           date: new Date().toISOString(),
         });
-      reportResult(
+      const rankPromise = reportResult(
         {
           kind: "timeattack",
           playerId: loadPlayerId(),
@@ -118,6 +130,7 @@ function startGame(mode: PlayMode): void {
             })
         : undefined;
       renderResult(root, result, () => startGame(mode), showTitle, save);
+      showRankLater(rankPromise);
     },
   });
 }
@@ -146,7 +159,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
           date: new Date().toISOString(),
         });
       }
-      reportResult(
+      const rankPromise = reportResult(
         {
           kind: "endurance",
           playerId: loadPlayerId(),
@@ -185,6 +198,7 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
         showTitle,
         save,
       );
+      showRankLater(rankPromise);
     },
   });
 }

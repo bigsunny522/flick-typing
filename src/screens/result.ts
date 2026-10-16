@@ -1,5 +1,6 @@
 import type { PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
+import { rankSlotHtml } from "./result-rank";
 
 export type ResultValues = {
   correct: number;
@@ -36,6 +37,7 @@ export function renderResult(
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
     `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
     `<p class="duration">プレイ時間 ${(values.endTimeMs / 1000).toFixed(1)}秒(ボーナス +${((values.endTimeMs - 60000) / 1000).toFixed(1)}秒)</p>` +
+    rankSlotHtml() +
     `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}<button id="title" class="secondary-button">タイトルへ</button></div></main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);

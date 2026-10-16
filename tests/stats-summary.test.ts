@@ -4,13 +4,13 @@ import {
   endurancePlayBins,
   histogram,
   jstDateKey,
+  jstWeekStartUtc,
+  parseRankResponse,
   previousDateKey,
   rankLabel,
-  rankOf,
   summarizeEndurance,
   summarizeTimeAttack,
   timeAttackPlayBins,
-  topPercent,
   totalReading,
 } from "../src/stats/summary";
 
@@ -31,6 +31,24 @@ describe("jstDateKey", () => {
 
   it("UTC 15:00 は日本時間で翌日に変わる", () => {
     expect(jstDateKey(Date.UTC(2026, 9, 16, 15, 0))).toBe("2026-10-17");
+  });
+});
+
+describe("jstWeekStartUtc", () => {
+  it("金曜 UTC 03:00 は日本時間の金曜で、週の始まりは 10-11 15:00:00", () => {
+    expect(jstWeekStartUtc(1792119600000)).toBe("2026-10-11 15:00:00");
+  });
+
+  it("日曜 UTC 14:59:59 はまだ前の週", () => {
+    expect(jstWeekStartUtc(1792335599000)).toBe("2026-10-11 15:00:00");
+  });
+
+  it("月曜 UTC 15:00(日本時間の月曜 0:00)は新しい週", () => {
+    expect(jstWeekStartUtc(1792335600000)).toBe("2026-10-18 15:00:00");
+  });
+
+  it("月曜 UTC 00:00 は同じ週", () => {
+    expect(jstWeekStartUtc(1792368000000)).toBe("2026-10-18 15:00:00");
   });
 });
 
@@ -190,47 +208,44 @@ describe("histogram", () => {
   });
 });
 
-describe("topPercent", () => {
-  it("空なら null", () => {
-    expect(topPercent([], 100)).toBeNull();
+describe("parseRankResponse", () => {
+  it("timeattack の week と all があればそのまま", () => {
+    expect(parseRankResponse({ kind: "timeattack", week: 3, all: 12 })).toEqual({
+      kind: "timeattack",
+      week: 3,
+      all: 12,
+    });
   });
 
-  it("いちばん上なら最小のパーセント", () => {
-    expect(topPercent([10, 20, 30, 40], 40)).toBe(25);
+  it("endurance の today があればそのまま", () => {
+    expect(parseRankResponse({ kind: "endurance", today: 5 })).toEqual({
+      kind: "endurance",
+      today: 5,
+    });
   });
 
-  it("いちばん下なら 100", () => {
-    expect(topPercent([10, 20, 30, 40], 10)).toBe(100);
+  it("timeattack で all が足りなければ null", () => {
+    expect(parseRankResponse({ kind: "timeattack", week: 3 })).toBeNull();
   });
 
-  it("同じ値が並ぶとき", () => {
-    expect(topPercent([10, 10, 20, 30], 10)).toBe(75);
-  });
-});
-
-describe("rankOf", () => {
-  it("空なら null", () => {
-    expect(rankOf([], 100)).toBeNull();
+  it("week が 0 なら null", () => {
+    expect(parseRankResponse({ kind: "timeattack", week: 0, all: 12 })).toBeNull();
   });
 
-  it("いちばん上なら 1", () => {
-    expect(rankOf([40, 30, 20, 10], 40)).toBe(1);
+  it("week が整数でなければ null", () => {
+    expect(parseRankResponse({ kind: "timeattack", week: 1.5, all: 12 })).toBeNull();
   });
 
-  it("いちばん下なら列の長さと同じ順位", () => {
-    expect(rankOf([40, 30, 20, 10], 10)).toBe(4);
+  it("today が文字列なら null", () => {
+    expect(parseRankResponse({ kind: "endurance", today: "5" })).toBeNull();
   });
 
-  it("同じ値は同じ順位", () => {
-    expect(rankOf([40, 30, 30, 10], 30)).toBe(2);
+  it("kind が分からないものは null", () => {
+    expect(parseRankResponse({ kind: "other", today: 5 })).toBeNull();
   });
 
-  it("同順位のぶんだけ次の順位が飛ぶ", () => {
-    expect(rankOf([40, 30, 30, 10], 20)).toBe(4);
-  });
-
-  it("列にない値でも順位を返す", () => {
-    expect(rankOf([40, 30, 20, 10], 50)).toBe(1);
+  it("null は null", () => {
+    expect(parseRankResponse(null)).toBeNull();
   });
 });
 
