@@ -29,15 +29,15 @@ export type ShareSource =
 export function shareText(source: ShareSource, rank: number | null, date: Date): string {
   const lines = [firstLine(source)];
   if (rank !== null) lines.push(rankLine(source, rank, date));
+  lines.push("");
   lines.push(inviteLine(source));
   lines.push(`#${HASHTAG}`);
   return lines.join("\n");
 }
 
-/** X の投稿画面の URL */
+/** X の投稿画面の URL。URL は `url=` ではなく文の最後の行に入れる */
 export function xIntentUrl(text: string): string {
-  const query = `text=${encodeURIComponent(text)}&url=${encodeURIComponent(SITE_URL)}`;
-  return `https://x.com/intent/post?${query}`;
+  return `https://x.com/intent/post?text=${encodeURIComponent(`${text}\n${SITE_URL}`)}`;
 }
 
 /** 画像のファイル名。`date` は端末の時刻(ローカル時刻で書く) */

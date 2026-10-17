@@ -28,19 +28,21 @@ describe("shareText", () => {
     expect(shareText(base, 3, date)).toBe(
       "フリック入力60秒タイムアタックで123字!\n" +
         "今週のランキングで暫定3位(10/7時点)\n" +
+        "\n" +
         "この記録、抜ける?\n" +
         "#ふりっくタイピング",
     );
   });
   it("タイムアタック 123字、順位 null", () => {
     expect(shareText(base, null, date)).toBe(
-      "フリック入力60秒タイムアタックで123字!\nこの記録、抜ける?\n#ふりっくタイピング",
+      "フリック入力60秒タイムアタックで123字!\n\nこの記録、抜ける?\n#ふりっくタイピング",
     );
   });
   it("タイムアタック perfect、順位 1", () => {
     expect(shareText({ ...base, perfect: true }, 1, date)).toBe(
       "フリック入力60秒タイムアタックでノーミス123字!\n" +
         "今週のランキングで暫定1位(10/7時点)\n" +
+        "\n" +
         "この記録、抜ける?\n" +
         "#ふりっくタイピング",
     );
@@ -48,6 +50,7 @@ describe("shareText", () => {
   it("タイムアタック bestUpdated、順位 null", () => {
     expect(shareText({ ...base, bestUpdated: true }, null, date)).toBe(
       "フリック入力60秒タイムアタックで123字!自己ベスト更新!\n" +
+        "\n" +
         "この記録、抜ける?\n" +
         "#ふりっくタイピング",
     );
@@ -56,6 +59,7 @@ describe("shareText", () => {
     expect(shareText(meros, 12, date)).toBe(
       "今日の耐久「走れメロス」を456字(12%)まで打った!\n" +
         "今日のランキングで暫定12位(10/7時点)\n" +
+        "\n" +
         "今日中なら同じ文章で勝負できる!\n" +
         "#ふりっくタイピング",
     );
@@ -63,6 +67,7 @@ describe("shareText", () => {
   it("耐久 complete 3800字、順位 null", () => {
     expect(shareText({ ...meros, complete: true, correct: 3800 }, null, date)).toBe(
       "今日の耐久「走れメロス」を3800字で完走!\n" +
+        "\n" +
         "今日中なら同じ文章で勝負できる!\n" +
         "#ふりっくタイピング",
     );
@@ -71,6 +76,7 @@ describe("shareText", () => {
     expect(shareText({ ...meros, complete: true, correct: 3800, bestUpdated: true }, 2, date)).toBe(
       "今日の耐久「走れメロス」を3800字で完走!今日のベスト更新!\n" +
         "今日のランキングで暫定2位(10/7時点)\n" +
+        "\n" +
         "今日中なら同じ文章で勝負できる!\n" +
         "#ふりっくタイピング",
     );
@@ -80,7 +86,7 @@ describe("shareText", () => {
 describe("xIntentUrl", () => {
   it("文と URL をエンコードする", () => {
     expect(xIntentUrl("a b\n#c")).toBe(
-      "https://x.com/intent/post?text=a%20b%0A%23c&url=https%3A%2F%2Fflicktypinggame.xyzack271.com%2F",
+      "https://x.com/intent/post?text=a%20b%0A%23c%0Ahttps%3A%2F%2Fflicktypinggame.xyzack271.com%2F",
     );
   });
 });

@@ -63,7 +63,7 @@ export function renderResult(
     `</svg>` +
     `でポスト` +
     `</a>` +
-    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
+    `<button id="share-image" class="secondary-button" disabled>画像を保存</button>` +
     `</div>` +
     `<button id="again" class="primary-button">もう一度</button>${saveButton}` +
     `<div class="result-actions-row">` +
