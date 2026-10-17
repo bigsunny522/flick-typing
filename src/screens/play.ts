@@ -130,9 +130,8 @@ export function renderPlay(host: HTMLElement, initial: SessionState, options: Pl
   };
   const paint = () => {
     const prompt = state.prompts[state.promptIndex];
-    const remaining = (
-      Math.max(0, state.endTimeMs - (performance.now() - startedAt)) / 1000
-    ).toFixed(1);
+    const elapsedMs = startedAt === 0 ? 0 : performance.now() - startedAt;
+    const remaining = (Math.max(0, state.endTimeMs - elapsedMs) / 1000).toFixed(1);
     const urgent = Number(remaining) <= 10;
     if (remaining !== seenRemaining) {
       seenRemaining = remaining;
