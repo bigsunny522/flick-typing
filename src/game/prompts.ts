@@ -60,8 +60,8 @@ export function choosePrompts(seed: number, prompts: Prompt[], count = 20): Prom
 
 export function validPrompts(prompts: Prompt[]): boolean {
   return (
-    prompts.length === 60 &&
-    new Set(prompts.map((prompt) => prompt.id)).size === 60 &&
+    prompts.length === 120 &&
+    new Set(prompts.map((prompt) => prompt.id)).size === 120 &&
     prompts.every((prompt) => [...prompt.reading].every((kana) => TYPEABLE.has(kana)))
   );
 }
