@@ -1,6 +1,7 @@
 import type { Best, PlayMode } from "../storage";
 import { bindThemeTap } from "../theme";
 import type { EnvVerdict } from "../anticheat/env";
+import { CONTACT_X } from "../about";
 
 const NATIVE_HINT = "フリック入力で打ってください(トグル入力は使えません)";
 
@@ -53,6 +54,11 @@ export function renderTitle(
     `</section>` +
     `</div>` +
     `<button id="ranking" class="secondary-button title-ranking">ランキング</button>` +
+    `<p class="title-contact">` +
+    `不具合のご報告・お問い合わせは X の ` +
+    `<a href="https://x.com/${CONTACT_X}" target="_blank" rel="noopener noreferrer">@${CONTACT_X}</a>` +
+    ` まで` +
+    `</p>` +
     `</div>` +
     `</main>`;
   host

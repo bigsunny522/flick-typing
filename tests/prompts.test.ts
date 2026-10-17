@@ -3,14 +3,14 @@ import { TYPEABLE } from "../src/game/kana";
 import { breakIndexes, choosePrompts, difficulty, PROMPTS } from "../src/game/prompts";
 
 describe("prompts", () => {
-  it("contains 60 prompts", () => {
-    expect(PROMPTS).toHaveLength(60);
+  it("contains 120 prompts", () => {
+    expect(PROMPTS).toHaveLength(120);
   });
   it("has unique ids", () => {
-    expect(new Set(PROMPTS.map((prompt) => prompt.id)).size).toBe(60);
+    expect(new Set(PROMPTS.map((prompt) => prompt.id)).size).toBe(120);
   });
   it("has unique text", () => {
-    expect(new Set(PROMPTS.map((prompt) => prompt.text)).size).toBe(60);
+    expect(new Set(PROMPTS.map((prompt) => prompt.text)).size).toBe(120);
   });
   it("reconstructs text and reading from chunks", () => {
     expect(
@@ -27,10 +27,10 @@ describe("prompts", () => {
       true,
     );
   });
-  it("has 20 prompts in each difficulty level", () => {
+  it("has 40 prompts in each difficulty level", () => {
     expect(
       [1, 2, 3].map((level) => PROMPTS.filter((p) => difficulty(p.reading) === level).length),
-    ).toEqual([20, 20, 20]);
+    ).toEqual([40, 40, 40]);
   });
   it("returns chunk break indexes", () => {
     expect(breakIndexes(["あめあがりの", "そらに", "にじが"])).toEqual([6, 9]);
@@ -73,8 +73,8 @@ describe("prompts", () => {
       choosePrompts(5, PROMPTS).map((p) => p.id),
     );
   });
-  it("uses every prompt before repeating in 60 selections", () => {
-    expect(new Set(choosePrompts(7, PROMPTS, 60).map((prompt) => prompt.id)).size).toBe(60);
+  it("uses every prompt before repeating in 120 selections", () => {
+    expect(new Set(choosePrompts(7, PROMPTS, 120).map((prompt) => prompt.id)).size).toBe(120);
   });
   it("contains full-width punctuation but not half-width punctuation", () => {
     expect(TYPEABLE.has("？") && TYPEABLE.has("！")).toBe(true);
