@@ -1,3 +1,4 @@
+import { mountAd } from "../ads/banner";
 import type { RankingBoard, ResultsResponse } from "../ranking/types";
 import { bindShare } from "../share/bind";
 import type { ShareSource } from "../share/text";
@@ -69,7 +70,9 @@ export function renderResult(
     `<div class="result-actions-row">` +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
     `<button id="ranking" class="secondary-button">ランキング</button>` +
-    `</div></div></main>`;
+    `</div></div>` +
+    `<div class="ad-slot"><p class="ad-label">広告</p></div>` +
+    `</main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
   host.querySelector<HTMLButtonElement>("#title")?.addEventListener("click", onTitle);
@@ -84,6 +87,7 @@ export function renderResult(
   });
   bindThemeTap(host);
   bindShare(host, source, rank);
+  mountAd(host);
   removeConfettiLater(host);
 }
 

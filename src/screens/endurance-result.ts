@@ -1,3 +1,4 @@
+import { mountAd } from "../ads/banner";
 import type { EnduranceEnd } from "../game/endurance";
 import type { RankingBoard, ResultsResponse } from "../ranking/types";
 import { bindShare } from "../share/bind";
@@ -75,6 +76,7 @@ export function renderEnduranceResult(
     `<button id="ranking" class="secondary-button">ランキング</button>` +
     `</div>` +
     `</div>` +
+    `<div class="ad-slot"><p class="ad-label">広告</p></div>` +
     `<p class="endurance-source">` +
     `<a href="${values.cardUrl}" target="_blank" rel="noopener">出典: 青空文庫</a>` +
     `</p>` +
@@ -93,6 +95,7 @@ export function renderEnduranceResult(
   });
   bindThemeTap(host);
   bindShare(host, source, rank);
+  mountAd(host);
 }
 
 function endReason(values: EnduranceResultValues): string {

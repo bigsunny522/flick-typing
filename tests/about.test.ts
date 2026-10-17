@@ -16,7 +16,7 @@ describe("aboutHtml", () => {
   });
 
   it("項目の数", () => {
-    expect(aboutHtml().split("<li>").length - 1).toBe(7);
+    expect(aboutHtml().split("<li>").length - 1).toBe(8);
   });
 
   it("入力欄を置かない", () => {

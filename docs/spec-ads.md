@@ -12,7 +12,7 @@
 | 置く場所 | タイムアタックと耐久の結果の画面の下だけ。プレイ中は出さない   |
 | 出す環境 | 本番の URL(`flicktypinggame.xyzack271.com`)だけ                |
 
-広告のスクリプトがゲームの画面や入力の経路に触れないよう、`sandbox` を付けた `<iframe srcdoc>` の中で読み込む。
+広告のスクリプトは `sandbox` を付けた `<iframe srcdoc>` の中で読み込み、結果の画面にだけ置く。
 
 ## 変更対象
 
@@ -58,7 +58,7 @@ export function mountAd(host: HTMLElement): void;
 - `isAdAllowed(location.hostname)` が false なら、`.ad-slot` を `remove()` して終わる
 - true なら `<iframe>` を作って `.ad-slot` に入れる:
   - `title = "広告"`、`width = "320"`、`height = "50"`
-  - `sandbox = "allow-scripts allow-popups allow-popups-to-escape-sandbox"`(`allow-same-origin` と `allow-top-navigation` は**付けない**。広告からゲームの画面に触れず、ページを移せないようにする)
+  - `sandbox = "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"`(`allow-top-navigation` は**付けない**。広告からページを移せないようにする。`allow-same-origin` は Adsterra のスクリプトが `document.cookie` を読むために要る。2026-10-17 に Claude Code が確認して追記)
   - `srcdoc` に下の HTML を入れる
 - `srcdoc` の HTML(`atOptions` はオーナーから受け取ったコードのまま):
 
@@ -137,7 +137,7 @@ export function mountAd(host: HTMLElement): void;
 - [ ] `npm run build` が通る
 - [ ] `npm run format:check` が通る
 - [ ] `grep -rn "layinghypothesis" src index.html` が `src/ads/banner.ts` だけを出す
-- [ ] `grep -n "allow-same-origin\|allow-top-navigation" src/ads/banner.ts` が何も出さない
+- [ ] `grep -n "allow-top-navigation" src/ads/banner.ts` が何も出さない
 - [ ] `grep -n "mountAd" src/screens/result.ts src/screens/endurance-result.ts` が両方のファイルで出る
 - [ ] 以下は Claude Code が確かめる(実装担当は不要)
   - 開発環境・プレビューの結果の画面に `.ad-slot` が残らない
@@ -151,7 +151,7 @@ export function mountAd(host: HTMLElement): void;
 
 ## 想定される落とし穴
 
-- **`allow-same-origin` を付けない。** `srcdoc` の iframe に `allow-scripts` と `allow-same-origin` を両方付けると、中のスクリプトが親の画面に触れられる。今回は付けない
+- **`allow-same-origin` は付けるしかない。** 付けないと Adsterra の `invoke.js` が `document.cookie` を読んだところで SecurityError になり、広告が出ない(2026-10-17 に開発環境で確認)。付けると中のスクリプトが親の画面に触れられるようになる。広告の iframe は結果の画面にしか置かず、画面を離れると消えるので、プレイ中に広告のスクリプトは動かない。スコアの正しさはサーバー側の再計算で守る
 - **広告の出る・出ないは Adsterra 側の都合。** 中が空でもエラーにしない。置き場所の高さを固定しないので、空ならラベルだけが出る
 - **`.ad-slot` は入力の経路にしない。** iframe はフォーカスできる要素だが、結果の画面にしか置かず、プレイ中の画面には何も足さない
 - **プレビューで広告を確かめられない。** 本番だけで出すため。プレビューでは `.ad-slot` が消えることだけを確かめる
