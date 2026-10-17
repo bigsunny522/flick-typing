@@ -26,6 +26,7 @@ export function renderEnduranceResult(
   rank: Promise<ResultsResponse | null>,
   onRanking: (board: RankingBoard, askName: boolean) => void,
   onSave?: () => void,
+  revisit = false,
 ): void {
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
   const bestRibbon = values.bestUpdated
@@ -55,16 +56,23 @@ export function renderEnduranceResult(
     `<p>進んだ割合<strong>${values.progress}<small>%</small></strong></p>` +
     `</div>` +
     `<div class="result-actions">` +
+    `<div class="result-actions-row share-row">` +
+    `<a id="share-x" class="share-x-button" target="_blank" rel="noopener noreferrer">` +
+    `<svg class="share-x-logo" viewBox="0 0 24 24" aria-hidden="true">` +
+    `<path` +
+    ` fill="currentColor"` +
+    ` d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"` +
+    `/>` +
+    `</svg>` +
+    `でポスト` +
+    `</a>` +
+    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
+    `</div>` +
     `<button id="again" class="primary-button">もう一度</button>` +
     saveButton +
     `<div class="result-actions-row">` +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
     `<button id="ranking" class="secondary-button">ランキング</button>` +
-    `</div>` +
-    `<div class="result-actions-row">` +
-    `<a id="share-x" class="secondary-button" target="_blank" rel="noopener noreferrer">` +
-    `X でシェア</a>` +
-    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
     `</div>` +
     `</div>` +
     `<p class="endurance-source">` +
@@ -77,7 +85,12 @@ export function renderEnduranceResult(
   host
     .querySelector<HTMLButtonElement>("#ranking")
     ?.addEventListener("click", () => onRanking("endurance-daily", false));
-  showResultRank(host, rank, { kind: "endurance", periodLabel: "今日", onRanking });
+  showResultRank(host, rank, {
+    kind: "endurance",
+    periodLabel: "今日",
+    onRanking,
+    offer: !revisit,
+  });
   bindThemeTap(host);
   bindShare(host, source, rank);
 }

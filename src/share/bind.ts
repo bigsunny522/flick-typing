@@ -1,10 +1,10 @@
 import type { ResultsResponse } from "../ranking/types";
 import { cardContent } from "./card-content";
 import { drawCard } from "./card";
-import { imageFileName, shareText, xIntentUrl, type ShareSource } from "./text";
+import { imageFileName, shareText, SITE_URL, xIntentUrl, type ShareSource } from "./text";
 
 /**
- * 結果画面の「X でシェア」と「画像で共有」をつなぐ。
+ * 結果画面の「X でポスト」と「画像で共有」をつなぐ。
  * `rank` は `POST /api/results` の返事(送っていなければ null に解決する)
  */
 export function bindShare(
@@ -16,17 +16,21 @@ export function bindShare(
   let periodRank: number | null = null;
   /** 作り終えた画像 */
   let file: File | null = null;
+  /** 共有シートに渡す文(画像と同時に作る) */
+  let shareTextWithUrl = "";
   /** 呼んだ回数の番号。大きい方だけ画像を入れ替える */
   let refreshToken = 0;
 
-  /** 文を入れ直し、順位とテーマに合った画像を先に作る */
+  /** 文を先に作り、順位とテーマに合った画像も先に作る */
   const refresh = (): void => {
     const link = host.querySelector<HTMLAnchorElement>("#share-x");
     if (!link) return;
-    link.href = xIntentUrl(shareText(source, periodRank));
+    const date = new Date();
+    const text = shareText(source, periodRank, date);
+    link.href = xIntentUrl(text);
+    shareTextWithUrl = `${text}\n${SITE_URL}`;
     refreshToken += 1;
     const current = refreshToken;
-    const date = new Date();
     void drawCard(cardContent(source, periodRank, date)).then((blob) => {
       if (!blob || current !== refreshToken) return;
       file = new File([blob], imageFileName(date), { type: "image/png" });
@@ -46,9 +50,10 @@ export function bindShare(
   host.querySelector<HTMLButtonElement>("#share-image")?.addEventListener("click", () => {
     const image = file;
     if (!image) return;
-    if (navigator.canShare?.({ files: [image] })) {
-      // 画像は先に作ってあるので、click の中で待たずに共有する
-      navigator.share({ files: [image] }).catch((error: unknown) => {
+    // 画像と文は先に作ってあるので、click の中で待たずに共有する
+    const data: ShareData = { files: [image], text: shareTextWithUrl };
+    if (navigator.canShare?.(data)) {
+      navigator.share(data).catch((error: unknown) => {
         if (isAbortError(error)) return;
         downloadFile(image);
       });

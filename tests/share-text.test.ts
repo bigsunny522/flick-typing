@@ -22,32 +22,57 @@ const meros: ShareSource = {
 };
 
 describe("shareText", () => {
-  it("タイムアタックに順位あり", () => {
-    expect(shareText(base, 3)).toBe(
-      "タイムアタックで123字打ちました!(今週3位)\n#ふりっくタイピング",
+  const date = new Date(2026, 9, 7, 21, 5);
+
+  it("タイムアタック 123字、順位 3", () => {
+    expect(shareText(base, 3, date)).toBe(
+      "フリック入力60秒タイムアタックで123字!\n" +
+        "今週のランキングで暫定3位(10/7時点)\n" +
+        "この記録、抜ける?\n" +
+        "#ふりっくタイピング",
     );
   });
-  it("タイムアタックに順位なし", () => {
-    expect(shareText(base, null)).toBe("タイムアタックで123字打ちました!\n#ふりっくタイピング");
-  });
-  it("タイムアタックのノーミス", () => {
-    expect(shareText({ ...base, perfect: true }, 1)).toBe(
-      "タイムアタックでノーミス123字打ちました!(今週1位)\n#ふりっくタイピング",
+  it("タイムアタック 123字、順位 null", () => {
+    expect(shareText(base, null, date)).toBe(
+      "フリック入力60秒タイムアタックで123字!\nこの記録、抜ける?\n#ふりっくタイピング",
     );
   });
-  it("耐久で完走でない", () => {
-    expect(shareText(meros, 12)).toBe(
-      "今日の耐久「走れメロス」で456字打ちました!(今日12位)\n#ふりっくタイピング",
+  it("タイムアタック perfect、順位 1", () => {
+    expect(shareText({ ...base, perfect: true }, 1, date)).toBe(
+      "フリック入力60秒タイムアタックでノーミス123字!\n" +
+        "今週のランキングで暫定1位(10/7時点)\n" +
+        "この記録、抜ける?\n" +
+        "#ふりっくタイピング",
     );
   });
-  it("耐久の完走に順位なし", () => {
-    expect(shareText({ ...meros, complete: true, correct: 2000 }, null)).toBe(
-      "今日の耐久「走れメロス」を完走しました!(2000字)\n#ふりっくタイピング",
+  it("タイムアタック bestUpdated、順位 null", () => {
+    expect(shareText({ ...base, bestUpdated: true }, null, date)).toBe(
+      "フリック入力60秒タイムアタックで123字!自己ベスト更新!\n" +
+        "この記録、抜ける?\n" +
+        "#ふりっくタイピング",
     );
   });
-  it("耐久の完走に順位あり", () => {
-    expect(shareText({ ...meros, complete: true, correct: 2000 }, 2)).toBe(
-      "今日の耐久「走れメロス」を完走しました!(2000字・今日2位)\n#ふりっくタイピング",
+  it("耐久「走れメロス」456字・12%、順位 12", () => {
+    expect(shareText(meros, 12, date)).toBe(
+      "今日の耐久「走れメロス」を456字(12%)まで打った!\n" +
+        "今日のランキングで暫定12位(10/7時点)\n" +
+        "今日中なら同じ文章で勝負できる!\n" +
+        "#ふりっくタイピング",
+    );
+  });
+  it("耐久 complete 3800字、順位 null", () => {
+    expect(shareText({ ...meros, complete: true, correct: 3800 }, null, date)).toBe(
+      "今日の耐久「走れメロス」を3800字で完走!\n" +
+        "今日中なら同じ文章で勝負できる!\n" +
+        "#ふりっくタイピング",
+    );
+  });
+  it("耐久 complete・bestUpdated 3800字、順位 2", () => {
+    expect(shareText({ ...meros, complete: true, correct: 3800, bestUpdated: true }, 2, date)).toBe(
+      "今日の耐久「走れメロス」を3800字で完走!今日のベスト更新!\n" +
+        "今日のランキングで暫定2位(10/7時点)\n" +
+        "今日中なら同じ文章で勝負できる!\n" +
+        "#ふりっくタイピング",
     );
   });
 });

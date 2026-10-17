@@ -62,9 +62,14 @@ function showTitle(): void {
   );
 }
 
-/** ランキング画面を開く。戻るときはタイトルに戻る。`askName` は移ってから名前を聞くか */
-function openRanking(board: RankingBoard, askName = false): void {
-  renderRanking(root, board, showTitle, askName);
+/** ランキング画面を開く。戻るときは `onBack`(省略ならタイトル)。`askName` は移ってから名前を聞くか */
+function openRanking(
+  board: RankingBoard,
+  askName = false,
+  onBack: () => void = showTitle,
+  backLabel = "戻る",
+): void {
+  renderRanking(root, board, onBack, askName, backLabel);
 }
 
 function startGame(mode: PlayMode): void {
@@ -123,15 +128,19 @@ function startGame(mode: PlayMode): void {
               debug,
             })
         : undefined;
-      renderResult(
-        root,
-        result,
-        () => startGame(mode),
-        showTitle,
-        rank,
-        (board, askName) => openRanking(board, askName),
-        save,
-      );
+      /** 結果の画面。ランキングから戻ったときは `revisit` が true */
+      const showResult = (revisit: boolean): void =>
+        renderResult(
+          root,
+          result,
+          () => startGame(mode),
+          showTitle,
+          rank,
+          (board, askName) => openRanking(board, askName, () => showResult(true), "結果に戻る"),
+          save,
+          revisit,
+        );
+      showResult(false);
     },
   });
 }
@@ -192,15 +201,20 @@ function startEnduranceRound(mode: PlayMode, dateKey: string): void {
             downloadLog({ ...log, env: collectEnv(), debug });
           }
         : undefined;
-      renderEnduranceResult(
-        root,
-        values,
-        () => startEnduranceRound(mode, dateKey),
-        showTitle,
-        rank,
-        (board, askName) => openRanking(board, askName),
-        save,
-      );
+      /** 結果の画面。ランキングから戻ったときは `revisit` が true */
+      const showEnduranceResult = (revisit: boolean): void =>
+        renderEnduranceResult(
+          root,
+          values,
+          () => startEnduranceRound(mode, dateKey),
+          showTitle,
+          rank,
+          (board, askName) =>
+            openRanking(board, askName, () => showEnduranceResult(true), "結果に戻る"),
+          save,
+          revisit,
+        );
+      showEnduranceResult(false);
     },
   });
 }

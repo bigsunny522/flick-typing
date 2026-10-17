@@ -105,7 +105,7 @@ export function openRankOffer(
 }
 
 /**
- * 送信の返事が来たら順位の行を書き、載せられるならポップアップを出す。
+ * 送信の返事が来たら順位の行を書き、`offer` が true なら載せられるときだけポップアップを出す。
  * 画面が替わって順位の行が残っていないときは何もしない
  */
 export function showResultRank(
@@ -115,6 +115,7 @@ export function showResultRank(
     kind: OfferKind;
     periodLabel: string; // 順位の行に出す今期の名前(タイムアタックは今週、耐久は今日)
     onRanking: (board: RankingBoard, askName: boolean) => void;
+    offer: boolean; // false のときは順位の行だけ書き、ポップアップを出さない
   },
 ): void {
   const line = host.querySelector(".result-rank");
@@ -126,6 +127,7 @@ export function showResultRank(
     const alltime = chances.alltime.rank;
     if (typeof period !== "number" || typeof alltime !== "number") return;
     line.textContent = `${options.periodLabel} ${period}位 ・ 歴代 ${alltime}位`;
+    if (!options.offer) return;
     const periods = offerPeriods(chances);
     if (periods.length === 0) return;
     openRankOffer(host, {

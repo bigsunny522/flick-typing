@@ -26,13 +26,14 @@ export function renderResult(
   rank: Promise<ResultsResponse | null>,
   onRanking: (board: RankingBoard, askName: boolean) => void,
   onSave?: () => void,
+  revisit = false,
 ): void {
   const total = values.correct + values.miss;
   const accuracy = total === 0 ? 0 : values.correct / total;
   const cps = values.correct / (values.endTimeMs / 1000);
   const saveButton = onSave ? '<button id="save" class="secondary-button">ログを保存</button>' : "";
   const ribbon = values.perfect ? '<p class="ribbon perfect-ribbon">PERFECT</p>' : "";
-  const confetti = values.perfect && !prefersReducedMotion() ? confettiMarkup() : "";
+  const confetti = values.perfect && !revisit && !prefersReducedMotion() ? confettiMarkup() : "";
   const source: ShareSource = {
     kind: "timeattack",
     correct: values.correct,
@@ -51,15 +52,23 @@ export function renderResult(
     `<p>ミス<strong>${values.miss}</strong></p><p>正確率<strong>${(accuracy * 100).toFixed(1)}<small>%</small></strong></p>` +
     `<p>1秒あたり<strong>${cps.toFixed(2)}<small>字</small></strong></p><p>最大コンボ<strong>${values.maxCombo}</strong></p></div>` +
     `<p class="duration">プレイ時間 ${(values.endTimeMs / 1000).toFixed(1)}秒(ボーナス +${((values.endTimeMs - 60000) / 1000).toFixed(1)}秒)</p>` +
-    `<div class="result-actions"><button id="again" class="primary-button">もう一度</button>${saveButton}` +
+    `<div class="result-actions">` +
+    `<div class="result-actions-row share-row">` +
+    `<a id="share-x" class="share-x-button" target="_blank" rel="noopener noreferrer">` +
+    `<svg class="share-x-logo" viewBox="0 0 24 24" aria-hidden="true">` +
+    `<path` +
+    ` fill="currentColor"` +
+    ` d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"` +
+    `/>` +
+    `</svg>` +
+    `でポスト` +
+    `</a>` +
+    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
+    `</div>` +
+    `<button id="again" class="primary-button">もう一度</button>${saveButton}` +
     `<div class="result-actions-row">` +
     `<button id="title" class="secondary-button">タイトルへ</button>` +
     `<button id="ranking" class="secondary-button">ランキング</button>` +
-    `</div>` +
-    `<div class="result-actions-row">` +
-    `<a id="share-x" class="secondary-button" target="_blank" rel="noopener noreferrer">` +
-    `X でシェア</a>` +
-    `<button id="share-image" class="secondary-button" disabled>画像で共有</button>` +
     `</div></div></main>`;
   host.querySelector<HTMLButtonElement>("#save")?.addEventListener("click", onSave ?? (() => {}));
   host.querySelector<HTMLButtonElement>("#again")?.addEventListener("click", onAgain);
@@ -67,7 +76,12 @@ export function renderResult(
   host
     .querySelector<HTMLButtonElement>("#ranking")
     ?.addEventListener("click", () => onRanking("timeattack-weekly", false));
-  showResultRank(host, rank, { kind: "timeattack", periodLabel: "今週", onRanking });
+  showResultRank(host, rank, {
+    kind: "timeattack",
+    periodLabel: "今週",
+    onRanking,
+    offer: !revisit,
+  });
   bindThemeTap(host);
   bindShare(host, source, rank);
   removeConfettiLater(host);

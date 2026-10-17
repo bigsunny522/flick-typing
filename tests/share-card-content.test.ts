@@ -37,7 +37,7 @@ describe("cardContent", () => {
   it("タイムアタックの種目と順位", () => {
     const card = cardContent(base, 5, date);
     expect(card.modeLabel).toBe("タイムアタック");
-    expect(card.rankLabel).toBe("今週 5位");
+    expect(card.rankLabel).toBe("今週 暫定5位");
   });
   it("順位がなければ順位なし", () => {
     expect(cardContent(base, null, date).rankLabel).toBe(null);
@@ -53,7 +53,7 @@ describe("cardContent", () => {
   it("耐久の種目と順位と stats", () => {
     const card = cardContent({ ...meros, bestUpdated: true }, 3, date);
     expect(card.modeLabel).toBe("今日の耐久");
-    expect(card.rankLabel).toBe("今日 3位");
+    expect(card.rankLabel).toBe("今日 暫定3位");
     expect(card.stats).toEqual([
       ["作品", "走れメロス / 太宰治"],
       ["進んだ割合", "12%"],

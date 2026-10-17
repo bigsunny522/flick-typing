@@ -3,7 +3,7 @@ import { SITE_URL, type ShareSource } from "./text";
 export type CardContent = {
   modeLabel: string; // "タイムアタック" / "今日の耐久"
   score: number; // correct
-  rankLabel: string | null; // "今週 5位" / "今日 3位"。rank が null なら null
+  rankLabel: string | null; // "今週 暫定5位" / "今日 暫定3位"。rank が null なら null
   badges: string[]; // 下の表の順。当てはまるものだけ
   stats: [string, string][]; // [見出し, 値]
   dateLabel: string; // "2026/10/07"
@@ -30,7 +30,7 @@ function timeattackCard(
   return {
     modeLabel: "タイムアタック",
     score: source.correct,
-    rankLabel: rank === null ? null : `今週 ${rank}位`,
+    rankLabel: rank === null ? null : `今週 暫定${rank}位`,
     badges,
     stats: [
       ["ミス", String(source.miss)],
@@ -54,7 +54,7 @@ function enduranceCard(
   return {
     modeLabel: "今日の耐久",
     score: source.correct,
-    rankLabel: rank === null ? null : `今日 ${rank}位`,
+    rankLabel: rank === null ? null : `今日 暫定${rank}位`,
     badges,
     stats: [
       ["作品", `${source.title} / ${source.author}`],

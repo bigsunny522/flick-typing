@@ -36,7 +36,7 @@ const SHELL =
   `<button type="button" id="change-name" class="secondary-button">名前を変える</button>` +
   `</div>` +
   `<div class="ranking-actions">` +
-  `<button type="button" id="ranking-back" class="secondary-button">戻る</button>` +
+  `<button type="button" id="ranking-back" class="secondary-button"></button>` +
   `</div>` +
   aboutHtml() +
   `</main>`;
@@ -47,6 +47,7 @@ export function renderRanking(
   initialBoard: RankingBoard,
   onBack: () => void,
   askName = false,
+  backLabel = "戻る",
 ): void {
   let board = initialBoard;
   /** 途中で切り替えたら古い応答を使わないための番号 */
@@ -54,6 +55,8 @@ export function renderRanking(
 
   host.innerHTML = SHELL;
   bindThemeTap(host);
+  const backButton = need<HTMLButtonElement>(host, "#ranking-back");
+  backButton.textContent = backLabel;
   const periods = need<HTMLElement>(host, ".ranking-periods");
   const periodLine = need<HTMLElement>(host, ".ranking-period");
   const list = need<HTMLElement>(host, ".ranking-list");
@@ -71,7 +74,7 @@ export function renderRanking(
   need<HTMLButtonElement>(host, "#change-name").addEventListener("click", () => {
     openNameForm(host, loadName(), applyName);
   });
-  need<HTMLButtonElement>(host, "#ranking-back").addEventListener("click", onBack);
+  backButton.addEventListener("click", onBack);
   load();
   if (askName) openNameForm(host, null, applyName, "ニックネームを登録");
 

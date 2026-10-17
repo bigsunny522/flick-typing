@@ -3,9 +3,14 @@ import { HASHTAG } from "./text";
 
 const WIDTH = 1200;
 const HEIGHT = 675;
-const MARGIN = 64;
-const TOP_BAND = 12;
-const RIGHT_COLUMN_START = 700;
+const CENTER = WIDTH / 2;
+const BOARD_X = 56;
+const BOARD_Y = 40;
+const BOARD_WIDTH = 1088;
+const BOARD_HEIGHT = 595;
+const BAND_HEIGHT = 10;
+const STATS_X = 136;
+const STATS_END = 1064;
 const FONT_JP = '"LINE Seed JP", sans-serif';
 const FONT_NUMBER = "Outfit, sans-serif";
 
@@ -17,7 +22,8 @@ type Palette = {
   primary: string;
   primaryInk: string;
   primaryStrong: string;
-  accent: string;
+  primaryTint: string;
+  primaryLine: string;
   line: string;
 };
 
@@ -47,28 +53,28 @@ function readPalette(): Palette {
     primary: pick("--primary"),
     primaryInk: pick("--primary-ink"),
     primaryStrong: pick("--primary-strong"),
-    accent: pick("--accent"),
+    primaryTint: pick("--primary-tint"),
+    primaryLine: pick("--primary-line"),
     line: pick("--line"),
   };
 }
 
 /** 使う太さと、書く文字列を指定して読む(読めなくても sans-serif で描く) */
 async function loadFonts(content: CardContent): Promise<void> {
-  const values = content.stats.map(([, value]) => value).join("");
   const headings = content.stats.map(([heading]) => heading).join("");
+  const values = content.stats.map(([, value]) => value).join("");
+  const bottom = `${content.dateLabel}  ${content.footer}  #${HASHTAG}`;
   const requests: [string, string][] = [
-    [`700 36px ${FONT_JP}`, "ふりっくタイピング"],
-    [`400 28px ${FONT_JP}`, content.dateLabel],
-    [`700 32px ${FONT_JP}`, content.modeLabel],
-    [`italic 300 200px ${FONT_NUMBER}`, String(content.score)],
+    [`700 30px ${FONT_JP}`, "ふりっくタイピング"],
+    [`700 26px ${FONT_JP}`, content.modeLabel],
+    [`italic 300 170px ${FONT_NUMBER}`, String(content.score)],
     [`700 48px ${FONT_JP}`, "字"],
-    [`700 40px ${FONT_JP}`, content.rankLabel ?? ""],
+    [`700 38px ${FONT_JP}`, content.rankLabel ?? ""],
     [`700 26px ${FONT_JP}`, content.badges.join("")],
-    [`700 24px ${FONT_JP}`, headings],
-    [`500 44px ${FONT_NUMBER}`, values],
-    [`700 30px ${FONT_JP}`, values],
-    [`400 26px ${FONT_JP}`, content.footer],
-    [`700 26px ${FONT_JP}`, `#${HASHTAG}`],
+    [`700 22px ${FONT_JP}`, headings],
+    [`500 38px ${FONT_NUMBER}`, values],
+    [`700 28px ${FONT_JP}`, values],
+    [`400 22px ${FONT_JP}`, bottom],
   ];
   await Promise.all(
     requests.map(async ([font, text]) => {
@@ -84,107 +90,115 @@ async function loadFonts(content: CardContent): Promise<void> {
 function paint(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillStyle = palette.bg;
+  ctx.fillStyle = palette.primaryTint;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(BOARD_X, BOARD_Y, BOARD_WIDTH, BOARD_HEIGHT);
+  ctx.strokeStyle = palette.primaryLine;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(BOARD_X, BOARD_Y, BOARD_WIDTH, BOARD_HEIGHT);
   ctx.fillStyle = palette.primary;
-  ctx.fillRect(0, 0, WIDTH, TOP_BAND);
-  drawHeader(ctx, content, palette);
-  drawLeftColumn(ctx, content, palette);
+  ctx.fillRect(BOARD_X, BOARD_Y, BOARD_WIDTH, BAND_HEIGHT);
+  drawName(ctx, palette);
+  drawMode(ctx, content, palette);
+  drawScore(ctx, content, palette);
+  drawRank(ctx, content, palette);
+  drawBadges(ctx, content, palette);
+  drawDivider(ctx, palette);
   drawStats(ctx, content, palette);
   drawFooter(ctx, content, palette);
 }
 
-function drawHeader(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
-  ctx.fillStyle = palette.fg;
-  ctx.font = `700 36px ${FONT_JP}`;
-  ctx.fillText("ふりっくタイピング", MARGIN, MARGIN);
-  ctx.textAlign = "right";
-  ctx.fillStyle = palette.muted;
-  ctx.font = `400 28px ${FONT_JP}`;
-  ctx.fillText(content.dateLabel, WIDTH - MARGIN, MARGIN + 4);
+/** 中央に文字を書く */
+function centerText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number): void {
+  ctx.textAlign = "center";
+  ctx.fillText(text, x, y);
   ctx.textAlign = "left";
 }
 
-function drawLeftColumn(
-  ctx: CanvasRenderingContext2D,
-  content: CardContent,
-  palette: Palette,
-): void {
-  let y = 128;
-  ctx.fillStyle = palette.primaryStrong;
-  ctx.font = `700 32px ${FONT_JP}`;
-  ctx.fillText(content.modeLabel, MARGIN, y);
-  y += 52;
-  const score = String(content.score);
+function drawName(ctx: CanvasRenderingContext2D, palette: Palette): void {
   ctx.fillStyle = palette.fg;
-  ctx.font = `italic 300 200px ${FONT_NUMBER}`;
-  ctx.fillText(score, MARGIN, y);
+  ctx.font = `700 30px ${FONT_JP}`;
+  centerText(ctx, "ふりっくタイピング", CENTER, 78);
+}
+
+/** 種類は帯ごと中央に置く */
+function drawMode(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
+  ctx.font = `700 26px ${FONT_JP}`;
+  const width = ctx.measureText(content.modeLabel).width + 36;
+  ctx.fillStyle = palette.primary;
+  ctx.fillRect(CENTER - width / 2, 124, width, 42);
+  ctx.fillStyle = palette.primaryInk;
+  centerText(ctx, content.modeLabel, CENTER, 132);
+}
+
+/** 文字数は数字と「字」の幅を合わせて中央に置く */
+function drawScore(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
+  const score = String(content.score);
+  ctx.font = `italic 300 170px ${FONT_NUMBER}`;
   const scoreWidth = ctx.measureText(score).width;
   ctx.font = `700 48px ${FONT_JP}`;
-  const unitX = MARGIN + scoreWidth + 10;
-  ctx.fillText("字", unitX, y + 142);
-  y += 214;
-  if (content.rankLabel !== null) {
-    ctx.font = `700 40px ${FONT_JP}`;
-    ctx.fillText(content.rankLabel, MARGIN, y);
-    y += 54;
-  }
-  drawBadges(ctx, content.badges, y, palette);
+  const unitWidth = ctx.measureText("字").width;
+  const start = CENTER - (scoreWidth + 10 + unitWidth) / 2;
+  ctx.fillStyle = palette.fg;
+  ctx.font = `italic 300 170px ${FONT_NUMBER}`;
+  ctx.fillText(score, start, 182);
+  ctx.font = `700 48px ${FONT_JP}`;
+  ctx.fillText("字", start + scoreWidth + 10, 294);
 }
 
-function drawBadges(
-  ctx: CanvasRenderingContext2D,
-  badges: string[],
-  y: number,
-  palette: Palette,
-): void {
-  if (badges.length === 0) return;
+function drawRank(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
+  if (content.rankLabel === null) return;
+  ctx.fillStyle = palette.primaryStrong;
+  ctx.font = `700 38px ${FONT_JP}`;
+  centerText(ctx, content.rankLabel, CENTER, 360);
+}
+
+/** バッジは全部の幅(間 12px)を合わせて中央に置く */
+function drawBadges(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
+  if (content.badges.length === 0) return;
   ctx.font = `700 26px ${FONT_JP}`;
-  let x = MARGIN;
-  for (const badge of badges) {
-    const width = ctx.measureText(badge).width + 32;
+  const widths = content.badges.map((badge) => ctx.measureText(badge).width + 32);
+  const total = widths.reduce((sum, width) => sum + width, 0) + 12 * (widths.length - 1);
+  let x = CENTER - total / 2;
+  content.badges.forEach((badge, index) => {
+    const width = widths[index];
     ctx.fillStyle = palette.primary;
-    ctx.fillRect(x, y, width, 40);
+    ctx.fillRect(x, 414, width, 40);
     ctx.fillStyle = palette.primaryInk;
-    ctx.fillText(badge, x + 16, y + 7);
+    ctx.fillText(badge, x + 16, 421);
     x += width + 12;
-  }
+  });
 }
 
+function drawDivider(ctx: CanvasRenderingContext2D, palette: Palette): void {
+  ctx.fillStyle = palette.line;
+  ctx.fillRect(STATS_X, 478, STATS_END - STATS_X, 1);
+}
+
+/** 数値は x 136〜1064 を stats の数で等分し、各区画の中央に書く */
 function drawStats(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
-  const width = WIDTH - MARGIN - RIGHT_COLUMN_START;
-  let y = 128;
+  const cell = (STATS_END - STATS_X) / content.stats.length;
   content.stats.forEach(([heading, value], index) => {
-    ctx.textAlign = "left";
+    const middle = STATS_X + cell * index + cell / 2;
     ctx.fillStyle = palette.muted;
-    ctx.font = `700 24px ${FONT_JP}`;
-    ctx.fillText(heading, RIGHT_COLUMN_START, y);
+    ctx.font = `700 22px ${FONT_JP}`;
+    centerText(ctx, heading, middle, 498);
     ctx.fillStyle = palette.fg;
     if (heading === "作品") {
-      ctx.font = `700 30px ${FONT_JP}`;
-      ctx.fillText(clip(ctx, value, width), RIGHT_COLUMN_START, y + 38);
+      ctx.font = `700 28px ${FONT_JP}`;
+      centerText(ctx, clip(ctx, value, cell - 24), middle, 530);
     } else {
-      ctx.font = `500 44px ${FONT_NUMBER}`;
-      ctx.fillText(value, RIGHT_COLUMN_START, y + 36);
-    }
-    y += 96;
-    if (index < content.stats.length - 1) {
-      ctx.fillStyle = palette.line;
-      ctx.fillRect(RIGHT_COLUMN_START, y - 22, width, 1);
+      ctx.font = `500 38px ${FONT_NUMBER}`;
+      centerText(ctx, value, middle, 530);
     }
   });
 }
 
 function drawFooter(ctx: CanvasRenderingContext2D, content: CardContent, palette: Palette): void {
-  const y = HEIGHT - MARGIN - 26;
-  ctx.textAlign = "left";
   ctx.fillStyle = palette.muted;
-  ctx.font = `400 26px ${FONT_JP}`;
-  ctx.fillText(content.footer, MARGIN, y);
-  ctx.textAlign = "right";
-  ctx.fillStyle = palette.primaryStrong;
-  ctx.font = `700 26px ${FONT_JP}`;
-  ctx.fillText(`#${HASHTAG}`, WIDTH - MARGIN, y);
+  ctx.font = `400 22px ${FONT_JP}`;
+  centerText(ctx, `${content.dateLabel}  ${content.footer}  #${HASHTAG}`, CENTER, 592);
 }
 
 /** 幅に入らなければ末尾を … にして詰める */
