@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://flicktypinggame.xyzack271.com/sitemap.xml
