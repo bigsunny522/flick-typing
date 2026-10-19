@@ -37,6 +37,32 @@ function jsonLdRaw(text: string): string {
   return value(text, /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/);
 }
 
+interface JsonLdNode {
+  "@type"?: string;
+  name?: string;
+  alternateName?: string[];
+  url?: string;
+  description?: string;
+  applicationCategory?: string;
+  operatingSystem?: string;
+  inLanguage?: string;
+  image?: string;
+  offers?: { "@type"?: string; price?: string; priceCurrency?: string };
+}
+
+function jsonLdGraph(text: string): JsonLdNode[] {
+  const raw = jsonLdRaw(text);
+  expect(raw).not.toBe("");
+  const data = JSON.parse(raw) as { "@graph"?: JsonLdNode[] };
+  return data["@graph"] ?? [];
+}
+
+function jsonLdNode(text: string, type: string): JsonLdNode {
+  const matched = jsonLdGraph(text).filter((node) => node["@type"] === type);
+  expect(matched).toHaveLength(1);
+  return matched[0];
+}
+
 describe("seo", () => {
   it("index.html の title が仕様の値", () => {
     expect(value(index, /<title>([^<]*)<\/title>/)).toBe(title);
@@ -51,16 +77,33 @@ describe("seo", () => {
     expect(og).toBe(description);
     expect(twitter).toBe(description);
   });
-  it("index.html の JSON-LD を JSON.parse でき、種別と URL が正しい", () => {
-    const raw = jsonLdRaw(index);
-    expect(raw).not.toBe("");
-    const data = JSON.parse(raw) as { "@type": string; url: string };
-    expect(data["@type"]).toBe("WebApplication");
-    expect(data.url).toBe(canonical);
+  it("index.html の JSON-LD を JSON.parse でき、@graph に WebSite と WebApplication が1つずつある", () => {
+    const graph = jsonLdGraph(index);
+    expect(graph.filter((node) => node["@type"] === "WebSite")).toHaveLength(1);
+    expect(graph.filter((node) => node["@type"] === "WebApplication")).toHaveLength(1);
   });
-  it("index.html の JSON-LD の description が meta description と同じ", () => {
-    const data = JSON.parse(jsonLdRaw(index)) as { description: string };
-    expect(data.description).toBe(metaDescription(index));
+  it("index.html の JSON-LD の WebSite の name と alternateName が仕様の値", () => {
+    const site = jsonLdNode(index, "WebSite");
+    expect(site.name).toBe("ふりっくタイピング");
+    expect(site.alternateName).toContain("フリックタイピング");
+  });
+  it("index.html の JSON-LD の WebSite と WebApplication の url が canonical と同じ", () => {
+    expect(jsonLdNode(index, "WebSite").url).toBe(canonical);
+    expect(jsonLdNode(index, "WebApplication").url).toBe(canonical);
+  });
+  it("index.html の JSON-LD の WebApplication の description が meta description と同じ", () => {
+    const app = jsonLdNode(index, "WebApplication");
+    expect(app.description).toBe(metaDescription(index));
+  });
+  it("index.html の JSON-LD の WebApplication の他の項目がそのまま残る", () => {
+    const app = jsonLdNode(index, "WebApplication");
+    expect(app.name).toBe("ふりっくタイピング");
+    expect(app.alternateName).toContain("フリックタイピング");
+    expect(app.applicationCategory).toBe("GameApplication");
+    expect(app.operatingSystem).toBe("iOS, Android");
+    expect(app.inLanguage).toBe("ja");
+    expect(app.image).toBe("https://flicktypinggame.xyzack271.com/ogp.png");
+    expect(app.offers).toEqual({ "@type": "Offer", price: "0", priceCurrency: "JPY" });
   });
   it("index.html の noscript の中に h1 がある", () => {
     const noscript = index.match(/<noscript>([\s\S]*?)<\/noscript>/)?.[0] ?? "";

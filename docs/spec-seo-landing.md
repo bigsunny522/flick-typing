@@ -116,6 +116,7 @@ export function landingHtml(): string
 既存の `.blocked`(中央寄せ)を、説明ページでは上寄せ・左寄せの読み物にする。色は既存の CSS 変数(`--fg`・`--primary` など、今あるもの)だけを使い、新しい色を足さない。
 
 - `.landing`: `justify-content: flex-start`、`align-items: stretch`、`text-align: left`、`max-width: 640px`、`margin: 0 auto`。`touch-action: pan-y` と `user-select: text`(`body` の `touch-action: none` / `user-select: none` を打ち消し、タブレットでもスクロール・選択できるようにする)
+- `touch-action` は祖先との積で効くので、`.landing` だけでは足りない。既存の `:is(html, body):has(.ranking-screen), …` の並び(`touch-action: auto` / `user-select: auto` / `overscroll-behavior: auto`)に `:is(html, body):has(.landing)` を足す
 - `.landing h1`: 既存の `.blocked h1` の `font-size: 22px` を上書きして `28px`
 - `.landing-notice`: 太字、`var(--primary)` の枠線か背景で目立たせる。中央寄せ
 - `.landing-url`: 小さめの文字、`overflow-wrap: anywhere`、中央寄せ

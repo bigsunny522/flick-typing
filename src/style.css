@@ -884,6 +884,69 @@ button {
   margin-top: 28px;
   font-size: 22px;
 }
+.landing {
+  justify-content: flex-start;
+  align-items: stretch;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+  touch-action: pan-y;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.landing h1 {
+  font-size: 28px;
+}
+.landing-lead {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.landing-notice {
+  align-self: center;
+  margin: 16px 0 0;
+  padding: 8px 16px;
+  font-weight: 800;
+  color: var(--primary-ink);
+  text-align: center;
+  border: 1.5px solid var(--primary);
+  background: var(--primary-tint);
+}
+.landing-url {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.landing-section {
+  margin-top: 28px;
+}
+.landing-section h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.landing-section h3 {
+  margin: 16px 0 0;
+  font-size: 15px;
+}
+.landing-section p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.landing a {
+  color: var(--primary-strong);
+}
+.landing-contact {
+  margin: 28px 0 0;
+  padding-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+  border-top: 1px solid var(--line);
+}
 .debug,
 .debug-panel {
   font:
@@ -958,7 +1021,8 @@ button {
 :is(html, body):has(.ranking-screen),
 :is(html, body):has(.result-screen),
 :is(html, body):has(.name-form),
-:is(html, body):has(.rank-offer) {
+:is(html, body):has(.rank-offer),
+:is(html, body):has(.landing) {
   touch-action: auto;
   user-select: auto;
   overscroll-behavior: auto;

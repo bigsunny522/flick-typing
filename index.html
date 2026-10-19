@@ -41,15 +41,27 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "ふりっくタイピング",
-        "url": "https://flicktypinggame.xyzack271.com/",
-        "description": "フリック入力だけで遊ぶスマホ用のタイピングゲーム。60秒のタイムアタックでフリック入力の速さを練習できます。青空文庫の名作で競う「今日の耐久」とランキングも。無料・登録不要。",
-        "applicationCategory": "GameApplication",
-        "operatingSystem": "iOS, Android",
-        "inLanguage": "ja",
-        "image": "https://flicktypinggame.xyzack271.com/ogp.png",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "ふりっくタイピング",
+            "alternateName": ["フリックタイピング", "Flick Typing"],
+            "url": "https://flicktypinggame.xyzack271.com/",
+            "inLanguage": "ja"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "ふりっくタイピング",
+            "alternateName": ["フリックタイピング", "Flick Typing"],
+            "url": "https://flicktypinggame.xyzack271.com/",
+            "description": "フリック入力だけで遊ぶスマホ用のタイピングゲーム。60秒のタイムアタックでフリック入力の速さを練習できます。青空文庫の名作で競う「今日の耐久」とランキングも。無料・登録不要。",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "iOS, Android",
+            "inLanguage": "ja",
+            "image": "https://flicktypinggame.xyzack271.com/ogp.png",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+          }
+        ]
       }
     </script>
   </head>
