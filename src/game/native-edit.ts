@@ -8,6 +8,40 @@ export type NativeEdit = {
   after: string; // このイベントの後の入力欄の値
 };
 
+export type EditBase = {
+  remembered: string; // 前回の input の後の値
+  commitBase: string | null; // deleteCompositionText の直前の値。確定の途中でなければ null
+  stale: string | null; // 切り替える前の入力欄の値。切り替えた直後の最初の input まで持つ
+};
+
+export function resolveEdit(
+  base: EditBase,
+  inputType: string,
+  after: string,
+): { before: string | null; next: EditBase } {
+  if (inputType === "deleteCompositionText") {
+    return {
+      before: null,
+      next: { remembered: after, commitBase: base.remembered, stale: base.stale },
+    };
+  }
+  let before =
+    inputType === "insertFromComposition" && base.commitBase !== null
+      ? base.commitBase
+      : base.remembered;
+  const stale = base.stale;
+  if (
+    stale !== null &&
+    stale !== "" &&
+    before === "" &&
+    [...after].length >= 2 &&
+    after.startsWith(stale)
+  ) {
+    before = stale;
+  }
+  return { before, next: { remembered: after, commitBase: null, stale: null } };
+}
+
 export function inputForEdit(
   edit: Pick<NativeEdit, "inputType" | "before" | "after">,
 ): JudgeInput | null {
@@ -15,8 +49,9 @@ export function inputForEdit(
   if (before === after) {
     return null;
   }
+  const fromComposition = inputType === "insertFromComposition";
   if (
-    inputType.startsWith("insertFrom") ||
+    (!fromComposition && inputType.startsWith("insertFrom")) ||
     inputType === "historyUndo" ||
     inputType === "historyRedo"
   ) {
@@ -29,13 +64,13 @@ export function inputForEdit(
   const deleted = before.length - common;
   const inserted = after.slice(common);
   if (inserted === "") {
-    return { kind: "cancel" };
+    return fromComposition ? null : { kind: "cancel" };
   }
   if ([...inserted].length >= 2) {
-    return { kind: "reject" };
+    return fromComposition ? null : { kind: "reject" };
   }
   if (!TYPEABLE.has(inserted)) {
-    return { kind: "reject" };
+    return fromComposition ? null : { kind: "reject" };
   }
   if (deleted === 0) {
     return { kind: "kana", kana: inserted };
@@ -43,5 +78,5 @@ export function inputForEdit(
   if (deleted === 1) {
     return { kind: "replace", kana: inserted };
   }
-  return { kind: "reject" };
+  return fromComposition ? null : { kind: "reject" };
 }

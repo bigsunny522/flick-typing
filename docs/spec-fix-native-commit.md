@@ -10,15 +10,15 @@ iPhone の実機の記録は取れていない。原因の候補は次の2つで
 
 iOS の WebKit では、確定のときに次の `input` が続けて来ることがある。
 
-| 順  | `inputType`             | 入力欄の値                           | 今の判定                                                        |
-| --- | ----------------------- | ------------------------------------ | --------------------------------------------------------------- |
-| 1   | `deleteCompositionText` | `きょうは` → ``                      | `cancel`(害はない)                                              |
-| 2   | `insertFromComposition` | `` → `きょうは`(または `きょうは。`) | `insertFrom` で始まるので `reject` → **ミス**、入力欄を空にする |
-| 3   | `insertText` など       | `` → `。`                            | 空の新しい入力欄に「。」 → **正解で次へ進む**                   |
+| 順  | `inputType`             | 入力欄の値                             | 今の判定                                                        |
+| --- | ----------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| 1   | `deleteCompositionText` | `きょうは` → `""`                      | `cancel`(害はない)                                              |
+| 2   | `insertFromComposition` | `""` → `きょうは`(または `きょうは。`) | `insertFrom` で始まるので `reject` → **ミス**、入力欄を空にする |
+| 3   | `insertText` など       | `""` → `。`                            | 空の新しい入力欄に「。」 → **正解で次へ進む**                   |
 
 ### 候補 2: 入力欄を切り替えた直後に、iOS が古い文字列を戻す
 
-お題の最後の文字で正解になると、`field.clear()` で入力欄を A から B へ切り替える。iOS では変換中に入力欄を変えると、次の入力で古い文字列が戻ってくることがある(`docs/spec-native-keyboard-probe.md` の調査の動機)。B に `` → `きょうはいいてんきです。` のような2文字以上の値が入り、`reject` → **ミス**になる。お題の最後の文字の直後にだけ起きるので、「。」(や「!」)のときだけミスに見える。
+お題の最後の文字で正解になると、`field.clear()` で入力欄を A から B へ切り替える。iOS では変換中に入力欄を変えると、次の入力で古い文字列が戻ってくることがある(`docs/spec-native-keyboard-probe.md` の調査の動機)。B に `""` → `きょうはいいてんきです。` のような2文字以上の値が入り、`reject` → **ミス**になる。お題の最後の文字の直後にだけ起きるので、「。」(や「!」)のときだけミスに見える。
 
 ### 直し方
 
@@ -54,19 +54,19 @@ iOS の WebKit では、確定のときに次の `input` が続けて来るこ�
 
 入力欄1つぶんの状態から、`onEdit` に渡す `before` を決める。
 
-```ts
+`""``ts
 export type EditBase = {
-  remembered: string; // 前回の input の後の値
-  commitBase: string | null; // deleteCompositionText の直前の値。確定の途中でなければ null
-  stale: string | null; // 切り替える前の入力欄の値。切り替えた直後の最初の input まで持つ
+remembered: string; // 前回の input の後の値
+commitBase: string | null; // deleteCompositionText の直前の値。確定の途中でなければ null
+stale: string | null; // 切り替える前の入力欄の値。切り替えた直後の最初の input まで持つ
 };
 
 export function resolveEdit(
-  base: EditBase,
-  inputType: string,
-  after: string,
+base: EditBase,
+inputType: string,
+after: string,
 ): { before: string | null; next: EditBase };
-```
+`""``
 
 - `before` が `null` のときは `onEdit` を呼ばない
 - 処理(上から順に):
@@ -79,15 +79,15 @@ export function resolveEdit(
 | #   | `base`(remembered / commitBase / stale) | `inputType`             | `after`        | 期待する `before` | 期待する `next`(remembered / commitBase / stale) |
 | --- | --------------------------------------- | ----------------------- | -------------- | ----------------- | ------------------------------------------------ |
 | 1   | `あ` / null / null                      | `insertCompositionText` | `あい`         | `あ`              | `あい` / null / null                             |
-| 2   | `きょうは` / null / null                | `deleteCompositionText` | ``             | null              | `` / `きょうは` / null                           |
-| 3   | `` / `きょうは` / null                  | `insertFromComposition` | `きょうは`     | `きょうは`        | `きょうは` / null / null                         |
-| 4   | `` / `きょうは` / null                  | `insertFromComposition` | `きょうは。`   | `きょうは`        | `きょうは。` / null / null                       |
-| 5   | `` / `きょうは` / null                  | `insertCompositionText` | `あ`           | ``                | `あ` / null / null                               |
-| 6   | `` / null / `きょうは。`                | `insertCompositionText` | `きょうは。`   | `きょうは。`      | `きょうは。` / null / null                       |
-| 7   | `` / null / `きょうは。`                | `insertCompositionText` | `きょうは。あ` | `きょうは。`      | `きょうは。あ` / null / null                     |
-| 8   | `` / null / `あ`                        | `insertCompositionText` | `あ`           | ``                | `あ` / null / null                               |
-| 9   | `` / null / `きょうは。`                | `insertCompositionText` | `か`           | ``                | `か` / null / null                               |
-| 10  | `` / null / `きょうは。`                | `deleteCompositionText` | ``             | null              | `/` / `きょうは。`                               |
+| 2   | `きょうは` / null / null                | `deleteCompositionText` | `""`           | null              | `""` / `きょうは` / null                         |
+| 3   | `""` / `きょうは` / null                | `insertFromComposition` | `きょうは`     | `きょうは`        | `きょうは` / null / null                         |
+| 4   | `""` / `きょうは` / null                | `insertFromComposition` | `きょうは。`   | `きょうは`        | `きょうは。` / null / null                       |
+| 5   | `""` / `きょうは` / null                | `insertCompositionText` | `あ`           | `""`              | `あ` / null / null                               |
+| 6   | `""` / null / `きょうは。`              | `insertCompositionText` | `きょうは。`   | `きょうは。`      | `きょうは。` / null / null                       |
+| 7   | `""` / null / `きょうは。`              | `insertCompositionText` | `きょうは。あ` | `きょうは。`      | `きょうは。あ` / null / null                     |
+| 8   | `""` / null / `あ`                      | `insertCompositionText` | `あ`           | `""`              | `あ` / null / null                               |
+| 9   | `""` / null / `きょうは。`              | `insertCompositionText` | `か`           | `""`              | `か` / null / null                               |
+| 10  | `""` / null / `きょうは。`              | `deleteCompositionText` | `""`           | null              | `/` / `きょうは。`                               |
 
 - 8 行目: 1文字だけのときは古い値とみなさない(切り替えた直後に、前と同じかなを打つことはある)
 
@@ -98,8 +98,8 @@ export function resolveEdit(
 | `きょうは` | `きょうは`   | `insertFromComposition` | `null`                                   |
 | `きょうは` | `きょうは。` | `insertFromComposition` | `{ kind: "kana", kana: "。" }`           |
 | `きょうは` | `今日は`     | `insertFromComposition` | `null`                                   |
-| ``         | `きょうは`   | `insertFromComposition` | `null`                                   |
-| `きょうは` | ``           | `insertFromComposition` | `null`                                   |
+| `""`       | `きょうは`   | `insertFromComposition` | `null`                                   |
+| `きょうは` | `""`         | `insertFromComposition` | `null`                                   |
 | `あ`       | `あいう`     | `insertFromPaste`       | `{ kind: "reject" }`(既存のテストのまま) |
 
 ### 4. `field.ts` で使う

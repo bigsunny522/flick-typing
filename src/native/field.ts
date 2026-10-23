@@ -1,4 +1,5 @@
 import { NATIVE_SOFT_KB_RATIO } from "../anticheat/thresholds";
+import { resolveEdit, type EditBase } from "../game/native-edit";
 
 const BLUR_CHECK_MS = 100;
 const STRETCH_HOLD_MS = 300;
@@ -34,7 +35,7 @@ export type NativeField = { focus(): void; clear(): void; reopen(): void; destro
 export function mountNativeField(host: HTMLElement, handlers: NativeFieldHandlers): NativeField {
   const fields = [createField(), createField()];
   host.append(fields[0], fields[1]);
-  const remembered = ["", ""];
+  const bases = [emptyBase(), emptyBase()];
   let current = 0;
   let disposed = false;
   let blurred = false;
@@ -80,17 +81,18 @@ export function mountNativeField(host: HTMLElement, handlers: NativeFieldHandler
   };
   const handleInput = (index: number, event: Event) => {
     if (disposed || index !== current) return;
-    const before = remembered[index];
     const after = fields[index].value;
     const inputType = event instanceof InputEvent ? event.inputType : "";
+    const resolved = resolveEdit(bases[index], inputType, after);
+    bases[index] = resolved.next;
+    if (resolved.before === null) return;
     handlers.onEdit({
       inputType,
-      before,
+      before: resolved.before,
       after,
       timeStamp: event.timeStamp,
       trusted: event.isTrusted,
     });
-    if (index === current) remembered[index] = after;
   };
   const handleKey = (event: KeyboardEvent) => {
     if (disposed) return;
@@ -138,13 +140,15 @@ export function mountNativeField(host: HTMLElement, handlers: NativeFieldHandler
   };
   const clear = () => {
     if (disposed) return;
+    const old = bases[current].remembered;
     const next = 1 - current;
     fields[current].value = "";
     fields[next].value = "";
     fields[next].focus();
     current = next;
-    remembered[0] = "";
-    remembered[1] = "";
+    bases[0] = emptyBase();
+    bases[1] = emptyBase();
+    bases[next] = { remembered: "", commitBase: null, stale: old === "" ? null : old };
   };
   const reopen = () => {
     if (disposed) return;
@@ -170,6 +174,10 @@ export function mountNativeField(host: HTMLElement, handlers: NativeFieldHandler
   };
   handleViewport();
   return { focus, clear, reopen, destroy };
+}
+
+function emptyBase(): EditBase {
+  return { remembered: "", commitBase: null, stale: null };
 }
 
 function createField(): HTMLInputElement {
