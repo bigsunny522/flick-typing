@@ -105,6 +105,111 @@ describe("inputForEdit for a composition commit", () => {
 });
 
 describe("resolveEdit", () => {
+  it("recognizes a restored stale value ending in punctuation", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "きょうは。" },
+        "insertCompositionText",
+        "きょうは。",
+      ),
+    ).toEqual({
+      before: "きょうは。",
+      next: { remembered: "きょうは。", commitBase: null, stale: null },
+    });
+  });
+  it("recognizes a restored stale value followed by one new character", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "きょうは。" },
+        "insertCompositionText",
+        "きょうは。あ",
+      ),
+    ).toEqual({
+      before: "きょうは。",
+      next: { remembered: "きょうは。あ", commitBase: null, stale: null },
+    });
+  });
+  it("recognizes a restored stale suffix ending in punctuation", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "いいてんき、" },
+        "insertCompositionText",
+        "てんき、",
+      ),
+    ).toEqual({
+      before: "てんき、",
+      next: { remembered: "てんき、", commitBase: null, stale: null },
+    });
+  });
+  it("recognizes a restored stale suffix followed by one new character", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "いいてんき、" },
+        "insertCompositionText",
+        "てんき、あ",
+      ),
+    ).toEqual({
+      before: "てんき、",
+      next: { remembered: "てんき、あ", commitBase: null, stale: null },
+    });
+  });
+  it("recognizes a restored stale suffix before a plain text insert", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "いいてんき、" },
+        "insertText",
+        "、あ",
+      ),
+    ).toEqual({
+      before: "、",
+      next: { remembered: "、あ", commitBase: null, stale: null },
+    });
+  });
+  it("does not treat a one character value as restored stale input", () => {
+    expect(
+      resolveEdit({ remembered: "", commitBase: null, stale: "あ" }, "insertCompositionText", "あ"),
+    ).toEqual({
+      before: "",
+      next: { remembered: "あ", commitBase: null, stale: null },
+    });
+  });
+  it("does not recognize an unrelated one character value", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "きょうは。" },
+        "insertCompositionText",
+        "か",
+      ),
+    ).toEqual({
+      before: "",
+      next: { remembered: "か", commitBase: null, stale: null },
+    });
+  });
+  it("does not recognize an unrelated two character value", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "きょうは。" },
+        "insertCompositionText",
+        "かき",
+      ),
+    ).toEqual({
+      before: "",
+      next: { remembered: "かき", commitBase: null, stale: null },
+    });
+  });
+  it("does not recognize a stale suffix followed by two new characters", () => {
+    expect(
+      resolveEdit(
+        { remembered: "", commitBase: null, stale: "いいてんき、" },
+        "insertCompositionText",
+        "てんき、あい",
+      ),
+    ).toEqual({
+      before: "",
+      next: { remembered: "てんき、あい", commitBase: null, stale: null },
+    });
+  });
+
   it("uses the remembered value as the base for a composition insert", () => {
     expect(
       resolveEdit(

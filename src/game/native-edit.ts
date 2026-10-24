@@ -30,14 +30,16 @@ export function resolveEdit(
       ? base.commitBase
       : base.remembered;
   const stale = base.stale;
-  if (
-    stale !== null &&
-    stale !== "" &&
-    before === "" &&
-    [...after].length >= 2 &&
-    after.startsWith(stale)
-  ) {
-    before = stale;
+  if (stale !== null && stale !== "" && before === "" && [...after].length >= 2) {
+    const chars = [...after];
+    if (stale.endsWith(after)) {
+      before = after;
+    } else {
+      const restored = chars.slice(0, -1).join("");
+      if (stale.endsWith(restored)) {
+        before = restored;
+      }
+    }
   }
   return { before, next: { remembered: after, commitBase: null, stale: null } };
 }

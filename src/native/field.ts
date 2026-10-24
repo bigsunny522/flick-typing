@@ -144,11 +144,11 @@ export function mountNativeField(host: HTMLElement, handlers: NativeFieldHandler
     const next = 1 - current;
     fields[current].value = "";
     fields[next].value = "";
-    fields[next].focus();
-    current = next;
     bases[0] = emptyBase();
     bases[1] = emptyBase();
     bases[next] = { remembered: "", commitBase: null, stale: old === "" ? null : old };
+    current = next;
+    fields[next].focus();
   };
   const reopen = () => {
     if (disposed) return;
